@@ -102,6 +102,10 @@ import dataService, {
   DEFAULT_NOTIFICATION_CONTROL_SETTINGS,
   type NotificationControlSettings,
   type PendingAnomalyAlert,
+  normalizeAsset,
+  normalizeMaintenance,
+  normalizeLicenseAllocation,
+  normalizeUser,
 } from '@/lib/dataService';
 import { computeAssetViewData } from '@/lib/utils/assetHelpers';
 import {
@@ -255,14 +259,18 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
     }
   }, [pathname, initialView]);
 
-  const [assets, setAssets] = useState<Asset[]>(serverData?.assets || []);
+  const [assets, setAssets] = useState<Asset[]>(() =>
+    (serverData?.assets || []).map(normalizeAsset)
+  );
   const [maintenanceRecords, setMaintenanceRecords] = useState<
     MaintenanceRecord[]
-  >(serverData?.maintenanceRecords || []);
+  >(() => (serverData?.maintenanceRecords || []).map(normalizeMaintenance));
   const [licenseAllocations, setLicenseAllocations] = useState<
     LicenseAllocation[]
-  >(serverData?.licenseAllocations || []);
-  const [users, setUsers] = useState<User[]>(serverData?.users || []);
+  >(() => (serverData?.licenseAllocations || []).map(normalizeLicenseAllocation));
+  const [users, setUsers] = useState<User[]>(() =>
+    (serverData?.users || []).map(normalizeUser)
+  );
   const [vendors, setVendors] = useState<Vendor[]>(serverData?.vendors || []);
   const [assetHistory, setAssetHistory] = useState<AssetHistoryType[]>(serverData?.assetHistory || []);
   const [categories, setCategories] = useState<Category[]>(serverData?.categories || []);

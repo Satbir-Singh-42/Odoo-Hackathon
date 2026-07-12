@@ -6,13 +6,13 @@ import { dataService, InAppNotification } from '@/lib/dataService';
 
 let globalFetchPromise: Promise<InAppNotification[]> | null = null;
 let globalLastFetchTime = 0;
+let globalMaxSeenId = 0;
 
 export const InAppNotificationBell: React.FC = () => {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const maxSeenIdRef = useRef<number>(0);
 
   const fetchNotifications = async (forceRefresh = false) => {
     // Share the same fetch promise across all mounted instances of the Bell
@@ -41,10 +41,10 @@ export const InAppNotificationBell: React.FC = () => {
       setUnreadCount(data.filter((n) => !n.isRead).length);
 
       let shouldReload = false;
-      let newMaxId = maxSeenIdRef.current;
+      let newMaxId = globalMaxSeenId;
 
       data.forEach(n => {
-        if (n.id > maxSeenIdRef.current) {
+        if (n.id > globalMaxSeenId) {
           if (!n.isRead && (n.type === "PROFILE" || n.type === "ROLE_CHANGE")) {
             shouldReload = true;
           }
@@ -52,15 +52,15 @@ export const InAppNotificationBell: React.FC = () => {
         }
       });
 
-      if (maxSeenIdRef.current > 0 && shouldReload) {
-        // Update maxSeenIdRef BEFORE reloading to prevent a reload loop
-        maxSeenIdRef.current = newMaxId;
+      if (globalMaxSeenId > 0 && shouldReload) {
+        // Update globalMaxSeenId BEFORE reloading to prevent a reload loop
+        globalMaxSeenId = newMaxId;
         // Dispatch a soft session refresh instead of a hard page reload
         window.dispatchEvent(new CustomEvent("REFRESH_APP_DATA"));
         return;
       }
 
-      maxSeenIdRef.current = newMaxId;
+      globalMaxSeenId = newMaxId;
     } catch (error) {
       console.error("Failed to fetch in-app notifications:", error instanceof Error ? error.message : error);
     } finally {

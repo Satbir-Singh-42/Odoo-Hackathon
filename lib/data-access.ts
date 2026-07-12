@@ -67,10 +67,37 @@ export async function getUsersData() {
 }
 
 export async function getCategoriesData() {
-  const categories = await prisma.assetType.findMany({
-    select: { id: true, categoryName: true, typeName: true },
+  const dbCategories = await prisma.assetCategory.findMany({
+    orderBy: { name: "asc" },
   });
-  return JSON.parse(JSON.stringify(categories));
+
+  const distinct = await prisma.assetType.findMany({
+    distinct: ["categoryName"],
+    select: { categoryName: true },
+  });
+
+  const categoryNames = new Set(dbCategories.map(c => c.name.toLowerCase()));
+  
+  const combined = [...dbCategories];
+  distinct.forEach(item => {
+    if (!categoryNames.has(item.categoryName.toLowerCase())) {
+      combined.push({
+        id: item.categoryName as any,
+        name: item.categoryName,
+        fields: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+    }
+  });
+
+  const formatted = combined.map(c => ({
+    id: c.name || c.id.toString(),
+    name: c.name,
+    fields: c.fields,
+  }));
+
+  return JSON.parse(JSON.stringify(formatted));
 }
 
 export async function getVendorsData() {

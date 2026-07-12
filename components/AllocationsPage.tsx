@@ -297,10 +297,8 @@ function DesktopAssetRow({
   const nonDisposedChildUnits = childUnits.filter(
     (u) => u.status !== ASSET_STATUS.DISPOSED,
   );
-  const allocatedChildCount = childUnits.filter(
-    (u) => u.status === ASSET_STATUS.ALLOCATED,
-  ).length;
-  const totalChildCount = nonDisposedChildUnits.length;
+  const allocatedChildCount = asset.allocatedQuantity || 0;
+  const totalChildCount = nonDisposedChildUnits.length || asset.totalQuantity || 0;
 
   return (
     <tr
@@ -1334,9 +1332,7 @@ export function AllocationsPage({
                     !a.isBulkOrder,
                 )
                 : [];
-              const allocatedChildCount = childUnits.filter(
-                (u) => u.status === ASSET_STATUS.ALLOCATED,
-              ).length;
+              const allocatedChildCount = asset.allocatedQuantity || 0;
 
               return (
                 <div

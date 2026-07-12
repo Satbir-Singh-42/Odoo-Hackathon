@@ -471,7 +471,7 @@ const apiClient = {
 };
 
 // Helper to normalize backend data to frontend types
-const normalizeAsset = (asset: any): Asset => {
+export const normalizeAsset = (asset: any): Asset => {
   if (!asset) return asset;
 
   // The API may return assetType as a nested { categoryName, typeName } object
@@ -489,9 +489,15 @@ const normalizeAsset = (asset: any): Asset => {
   const activeAlloc = Array.isArray(asset.allocations) ? asset.allocations[0] : null;
   const allocEmployee = activeAlloc?.employee;
 
+  let status = asset.status;
+  if (status === "Partially_Allocated") status = "Partially Allocated";
+  else if (status === "Under_Maintenance") status = "Under Maintenance";
+  else if (status === "License_Expired") status = "License Expired";
+
   return {
     ...asset,
     id: String(asset.id),
+    status,
     // Flatten assetType relation → flat string fields
     category: nestedType?.categoryName ?? asset.category ?? "",
     assetType: nestedType?.typeName ?? (typeof asset.assetType === "string" ? asset.assetType : ""),
@@ -511,7 +517,7 @@ const normalizeAsset = (asset: any): Asset => {
 };
 
 
-const normalizeMaintenance = (record: any): MaintenanceRecord => {
+export const normalizeMaintenance = (record: any): MaintenanceRecord => {
   if (!record) return record;
   return {
     ...record,
@@ -520,14 +526,31 @@ const normalizeMaintenance = (record: any): MaintenanceRecord => {
   };
 };
 
-const normalizeLicenseAllocation = (alloc: any): LicenseAllocation => {
+export const normalizeLicenseAllocation = (alloc: any): LicenseAllocation => {
   if (!alloc) return alloc;
+
+  let status = alloc.status;
+  if (status === "ACTIVE") status = "Active";
+  else if (status === "RETURNED") status = "Returned";
+  else if (status === "REVOKED") status = "Revoked";
+  else if (status === "EXPIRED") status = "Expired";
+
   return {
     ...alloc,
     id: String(alloc.id),
     assetId: String(alloc.assetId),
     parentAssetId: alloc.parentAssetId ? Number(alloc.parentAssetId) : null,
     targetUnitId: alloc.targetUnitId ? String(alloc.targetUnitId) : null,
+    status,
+  };
+};
+
+export const normalizeUser = (u: any): User => {
+  if (!u) return u;
+  return {
+    ...u,
+    employeeId: String(u.id || u.employeeId),
+    userName: u.fullName || u.userName,
   };
 };
 
@@ -982,11 +1005,7 @@ export const dataService = {
   async getUsers(): Promise<User[]> {
     const result = await apiClient.get("/users");
     const rawList = Array.isArray(result) ? result : (result?.users || result?.data || []);
-    return (Array.isArray(rawList) ? rawList : []).map((u: any) => ({
-      ...u,
-      employeeId: String(u.id),
-      userName: u.fullName || u.userName,
-    }));
+    return (Array.isArray(rawList) ? rawList : []).map(normalizeUser);
   },
 
   async createUser(data: {
