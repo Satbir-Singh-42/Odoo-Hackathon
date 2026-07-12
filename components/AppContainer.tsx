@@ -3154,10 +3154,11 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
               users={users}
               userRole={currentRole}
             />
-            {currentView === "guide" && (
-            <GuidePage />
+            
           )}
-          )}
+          {currentView === "guide" && (
+  <GuidePage />
+)}
         </Suspense>
       </main>
 
