@@ -352,9 +352,9 @@ export function Dashboard({
 
     const totalPriceSum = assets.reduce((sum, a) => {
       if (a.status === ASSET_STATUS.DISPOSED) return sum;
-      if (!a.isBulkOrder) return sum + (a.purchasePrice || 0);
+      if (!a.isBulkOrder) return sum + (Number(a.purchasePrice) || 0);
       if ((parentChildCounts.get(String(a.id)) || 0) === 0) {
-        return sum + (a.purchasePrice || 0) * getTotalQuantity(a);
+        return sum + (Number(a.purchasePrice) || 0) * getTotalQuantity(a);
       }
       return sum;
     }, 0);

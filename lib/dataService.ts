@@ -982,7 +982,11 @@ export const dataService = {
   async getUsers(): Promise<User[]> {
     const result = await apiClient.get("/users");
     const rawList = Array.isArray(result) ? result : (result?.users || result?.data || []);
-    return Array.isArray(rawList) ? rawList : [];
+    return (Array.isArray(rawList) ? rawList : []).map((u: any) => ({
+      ...u,
+      employeeId: String(u.id),
+      userName: u.fullName || u.userName,
+    }));
   },
 
   async createUser(data: {
