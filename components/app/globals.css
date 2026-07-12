@@ -1,0 +1,1153 @@
+@import "tailwindcss";
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  *:not(svg):not(svg *) {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .ui-page-shell {
+    @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .ui-meta-label {
+    @apply text-[10px] font-semibold text-gray-500 uppercase tracking-wider;
+  }
+
+  .ui-filter-label {
+    @apply text-[10px] font-semibold text-gray-500 uppercase tracking-wider ml-1;
+  }
+
+  .ui-table-head {
+    @apply text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider;
+  }
+
+  .ui-table-head-compact {
+    @apply px-6 py-3 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider;
+  }
+
+  .ui-table-head-compact-sticky {
+    @apply px-6 py-3 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/95 backdrop-blur;
+  }
+
+  .ui-field-label {
+    @apply text-xs text-gray-600 font-semibold;
+  }
+
+  .ui-form-label {
+    @apply block text-xs font-semibold text-gray-700 mb-1;
+  }
+
+  .ui-caps-label {
+    @apply text-xs font-semibold text-gray-700;
+  }
+
+  /* Global input field values styling - force normal font weight inside inputs */
+  input,
+  select,
+  textarea,
+  .ui-control input,
+  .ui-control select,
+  .ui-control textarea {
+    font-weight: 400 !important;
+  }
+
+  .ui-section-title {
+    @apply text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 lg:pb-1;
+  }
+
+  .ui-control {
+    @apply rounded-lg border-gray-300 bg-white transition-colors;
+    border-width: 0.5px;
+    border-style: solid;
+  }
+
+  .ui-control:focus,
+  .ui-control:focus-visible,
+  .ui-control:focus-within {
+    @apply outline-none ring ring-blue-500;
+    --tw-ring-width: 0.5px;
+  }
+
+  :where(button, [role="button"], input, select, textarea):focus,
+  :where(button, [role="button"], input, select, textarea):focus-visible {
+    --tw-ring-width: 0.5px !important;
+  }
+
+  .ui-copy-strong-dark {
+    @apply text-sm font-semibold leading-tight mb-1 text-gray-900;
+  }
+
+  .ui-copy-strong-muted {
+    @apply text-sm font-semibold leading-tight mb-1 text-gray-600;
+  }
+
+  .ui-copy-strong-xs {
+    @apply text-xs font-semibold text-gray-900 leading-tight;
+  }
+
+  /* Documentation Typography Utilities */
+  .doc-content strong,
+  .doc-content b {
+    @apply font-bold text-gray-900;
+  }
+
+  .doc-content ul {
+    @apply list-disc list-inside space-y-2 mb-6;
+  }
+
+  .doc-content li {
+    @apply text-sm text-gray-600;
+  }
+
+  .doc-content code {
+    @apply px-1.5 py-0.5 rounded text-[13px] font-mono bg-gray-100 text-pink-600;
+  }
+
+  .doc-content h1 {
+    @apply text-4xl font-bold text-gray-900 mb-4;
+  }
+
+  .doc-content h2 {
+    @apply text-2xl font-bold text-gray-900 mb-6;
+  }
+
+  .doc-content h3 {
+    @apply text-xl font-bold text-gray-900 mb-4;
+  }
+
+  .doc-content p {
+    @apply text-gray-700 leading-relaxed mb-6;
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Custom Scrollbar Styling */
+html,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+.form-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+html::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.form-scroll-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html::-webkit-scrollbar-track,
+.overflow-auto::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track,
+.form-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb,
+.form-scroll-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+.form-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+html::-webkit-scrollbar-thumb:active,
+.overflow-auto::-webkit-scrollbar-thumb:active,
+.overflow-y-auto::-webkit-scrollbar-thumb:active,
+.overflow-x-auto::-webkit-scrollbar-thumb:active,
+.form-scroll-container::-webkit-scrollbar-thumb:active {
+  background: #6b7280;
+}
+
+.dropdown-popover {
+  isolation: isolate;
+  z-index: 9999 !important;
+}
+
+.form-scroll-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 120px;
+}
+
+/* ================================================
+   SUBTLE ANIMATIONS - Smooth & Professional
+   ================================================ */
+
+/* Global transition defaults - all interactive elements get smooth transitions */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+.card,
+.btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle hover lift for cards */
+.card,
+[data-card],
+.bg-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover,
+[data-card]:hover,
+.bg-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Button hover effects */
+button:not(:disabled):not(.no-push):hover,
+[role="button"]:not(:disabled):not(.no-push):hover {
+  /* Removed translateY to prevent slight move on search/filter fields */
+}
+
+
+/* Input focus animation */
+input:focus,
+select:focus,
+textarea:focus {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Table row hover */
+tr {
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Dropdown slide-down animation — used by ThemedSelect in AdminControlPage */
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-in animation for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply fade-in to main content areas */
+main,
+[data-content],
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Staggered animation for lists */
+.animate-list>* {
+  animation: fadeIn 0.3s ease-out backwards;
+}
+
+.animate-list>*:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.animate-list>*:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.animate-list>*:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.animate-list>*:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.animate-list>*:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.animate-list>*:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+/* Subtle pulse for loading states */
+@keyframes subtlePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: subtlePulse 2s ease-in-out infinite;
+}
+
+/* Icon rotation on hover */
+.icon-spin-hover:hover svg {
+  transition: transform 0.3s ease;
+  transform: rotate(90deg);
+}
+
+/* Smooth accordion/collapsible */
+[data-state="open"],
+[data-state="closed"] {
+  transition:
+    height 0.2s ease,
+    opacity 0.2s ease;
+}
+
+/* Badge/chip hover effect */
+.badge,
+[data-badge] {
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.badge:hover,
+[data-badge]:hover {
+  transform: scale(1.02);
+}
+
+/* Modal/Dialog entrance */
+[data-dialog-content] {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Dropdown menu animation */
+[data-dropdown-content] {
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Tooltip animation */
+[data-tooltip] {
+  animation: fadeIn 0.1s ease-out;
+}
+
+/* Sidebar item hover */
+.sidebar-item,
+[data-sidebar-item] {
+  transition:
+    background-color 0.15s ease,
+    padding-left 0.15s ease;
+}
+
+.sidebar-item:hover,
+[data-sidebar-item]:hover {
+  padding-left: 4px;
+}
+
+/* Progress bar animation */
+[role="progressbar"]>div {
+  transition: width 0.5s ease;
+}
+
+/* Chart animation placeholder */
+.recharts-wrapper {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Remove square border/outline from Recharts charts when clicked */
+.recharts-surface,
+.recharts-wrapper,
+.recharts-responsive-container,
+.recharts-wrapper svg,
+.recharts-wrapper *:focus,
+svg:focus {
+  outline: none !important;
+  border: none !important;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ================================================
+   MOBILE MODAL FULL-SCREEN OPTIMIZATION
+   On small screens, large modals go full-screen for a
+   professional, native-app feel. Uses dvh for proper
+   height under mobile browser chrome, and safe-area
+   insets for notched devices.
+   ================================================ */
+
+@media screen and (max-width: 640px) {
+
+  /* Modal scrollable content gets generous bottom padding so
+     the last items aren't hidden behind mobile browser chrome */
+  .modal-safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+  }
+
+  /* Full-screen modal with safe area top inset */
+  .modal-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Ensure modal overlay containers leave room at the bottom
+     for the browser toolbar / OS navigation bar */
+  .fixed.inset-0.z-50 {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ================================================
+   MOBILE TYPOGRAPHY TOKENS (CENTRALIZED)
+   Standardize small text, labels, and badges without touching component files.
+   ================================================ */
+
+@media screen and (max-width: 768px) {
+  :root {
+    --mobile-font-micro: 11px;
+    --mobile-font-xs: 12px;
+    --mobile-font-sm: 13px;
+    --mobile-font-body: 14px;
+    --mobile-leading-tight: 1.25;
+    --mobile-leading-normal: 1.4;
+    --mobile-weight-copy: 400;
+    --mobile-weight-medium: 500;
+    --mobile-weight-label: 600;
+    --mobile-tracking-label: 0.04em;
+  }
+
+  /* Mobile text utility scale */
+  .text-xs {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-normal);
+  }
+
+  .text-sm {
+    font-size: var(--mobile-font-sm);
+    line-height: var(--mobile-leading-normal);
+  }
+
+  .text-base {
+    font-size: var(--mobile-font-body);
+    line-height: var(--mobile-leading-normal);
+  }
+
+  /* Normalize tiny arbitrary values used across dense list UIs */
+  [class*="text-[8px]"],
+  [class*="text-[9px]"],
+  [class*="text-[10px]"] {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+  }
+
+  [class*="text-[11px]"],
+  [class*="text-[12px]"] {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+  }
+
+  [class*="text-[13px]"] {
+    font-size: var(--mobile-font-sm);
+    line-height: var(--mobile-leading-normal);
+  }
+
+  [class*="text-[14px]"] {
+    font-size: var(--mobile-font-body);
+    line-height: var(--mobile-leading-normal);
+  }
+
+  /* Shared mobile helpers */
+  .mobile-xs {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-medium);
+  }
+
+  .mobile-micro {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  /* Keep centralized UI typography utilities consistent on mobile */
+  .ui-meta-label,
+  .ui-filter-label {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  .ui-field-label {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+  }
+
+  /* Mobile label/header consistency for tiny uppercase metadata */
+  label.mobile-micro,
+  label.mobile-xs,
+  th.mobile-micro,
+  [class*="text-[10px]"][class*="uppercase"] {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  /* Centralize dense table/meta headers used across list pages */
+  thead th,
+  th[class*="uppercase"] {
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  /* Normalize common metadata patterns with hardcoded tiny text */
+  [class*="text-[10px]"][class*="tracking-wider"],
+  [class*="text-xs"][class*="tracking-wider"],
+  [class*="text-[10px]"][class*="tracking-wide"],
+  [class*="text-xs"][class*="tracking-wide"] {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  /* Keep compact code/chip labels readable but consistent */
+  [class*="font-mono"][class*="text-[10px]"] {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+  }
+
+  /* Soften excessive weight spikes on compact mobile text */
+  :is(span, p, div, td, a, button).font-bold,
+  :is(span, p, div, td, a, button).font-extrabold,
+  :is(span, p, div, td, a, button).font-black {
+    font-weight: var(--mobile-weight-label);
+  }
+
+  /* Keep status chips/badges visually consistent */
+  [class*="rounded-full"][class*="text-[10px]"],
+  [class*="rounded-full"].text-xs {
+    font-weight: var(--mobile-weight-label);
+    line-height: 1;
+  }
+
+  /* Asset detail modal: enforce a single mobile typography scale */
+  .asset-detail-modal .ui-section-title {
+    font-size: var(--mobile-font-body);
+    line-height: var(--mobile-leading-normal);
+    font-weight: var(--mobile-weight-label);
+  }
+
+  .asset-detail-modal .ui-copy-strong,
+  .asset-detail-modal .ui-copy-strong-dark,
+  .asset-detail-modal .ui-copy-strong-muted,
+  .asset-detail-modal .ui-copy-strong-xs,
+  .asset-detail-modal .text-sm {
+    font-size: var(--mobile-font-sm);
+    line-height: var(--mobile-leading-normal);
+    font-weight: var(--mobile-weight-medium);
+  }
+
+  .asset-detail-modal .mobile-xs,
+  .asset-detail-modal .mobile-micro,
+  .asset-detail-modal .text-xs,
+  .asset-detail-modal [class*="text-[9px]"],
+  .asset-detail-modal [class*="text-[10px]"],
+  .asset-detail-modal [class*="text-[11px]"] {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-medium);
+  }
+
+  .asset-detail-modal .ui-field-label {
+    font-size: var(--mobile-font-xs);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+  }
+
+  .asset-detail-modal [class*="text-xs"][class*="uppercase"],
+  .asset-detail-modal [class*="text-[10px]"][class*="uppercase"] {
+    font-size: var(--mobile-font-micro);
+    line-height: var(--mobile-leading-tight);
+    font-weight: var(--mobile-weight-label);
+    letter-spacing: var(--mobile-tracking-label);
+  }
+
+  /* Ensure base elements and form fields remain readable and non-zoomy */
+  html,
+  body,
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  select,
+  textarea {
+    font-size: var(--mobile-font-body);
+    line-height: var(--mobile-leading-normal);
+  }
+}
+
+/* Additional mobile viewport fix - prevent zoom on double tap */
+@media screen and (max-width: 768px) {
+
+  input,
+  select,
+  textarea,
+  button {
+    touch-action: manipulation;
+    /* Prevents zoom on double-tap */
+  }
+}
+
+/* Constrain native date/time inputs to their container — prevents overflow in grids */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  display: block;
+  inline-size: 100%;
+  width: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
+  color: inherit;
+  line-height: 1.25rem;
+  /* Keep native date text vertically aligned and slightly lower like other controls */
+  padding-top: 0.4375rem;
+  padding-bottom: 0.3125rem;
+}
+
+/* Decorative calendar icon while the whole field remains a picker trigger */
+input[type="date"],
+input[type="datetime-local"] {
+  position: relative;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+}
+
+/* Expand native picker click target to full field, keep it visually hidden */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* iOS Safari can keep intrinsic date widths; force shrink-to-container sizing */
+@supports (-webkit-touch-callout: none) {
+
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    width: 1px;
+    min-width: 100%;
+  }
+}
+
+/* Webkit date-input inner controls — shrink to fit */
+input[type="date"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  line-height: inherit;
+  text-align: left;
+}
+
+/* Force date-edit fields and text separators to inherit color of parent container */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field,
+input[type="datetime-local"]::-webkit-datetime-edit-text,
+input[type="datetime-local"]::-webkit-datetime-edit-month-field,
+input[type="datetime-local"]::-webkit-datetime-edit-day-field,
+input[type="datetime-local"]::-webkit-datetime-edit-year-field,
+input[type="time"]::-webkit-datetime-edit-text,
+input[type="time"]::-webkit-datetime-edit-month-field,
+input[type="time"]::-webkit-datetime-edit-day-field,
+input[type="time"]::-webkit-datetime-edit-year-field {
+  color: inherit;
+}
+
+/* ================================================
+   SONNER TOAST NOTIFICATIONS - Professional Design
+   ================================================ */
+
+/* Toast entrance/exit animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* Toast container positioning and spacing */
+[data-sonner-toaster] {
+  font-family: inherit !important;
+}
+
+/* Base toast styling with entrance animation */
+[data-sonner-toast] {
+  background: white !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  gap: 12px !important;
+  min-height: 64px !important;
+  backdrop-filter: blur(8px) !important;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Exit animation - applied when toast is being removed */
+[data-sonner-toast][data-removing="true"] {
+  animation: slideOutRight 0.2s cubic-bezier(0.4, 0, 1, 1) !important;
+}
+
+/* Mobile: slide from bottom */
+@media screen and (max-width: 640px) {
+  [data-sonner-toast] {
+    animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  [data-sonner-toast][data-removing="true"] {
+    animation: slideOutDown 0.2s cubic-bezier(0.4, 0, 1, 1) !important;
+  }
+}
+
+/* Toast title (main message) */
+[data-sonner-toast] [data-title] {
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: #111827 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Toast description */
+[data-sonner-toast] [data-description] {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: #6b7280 !important;
+  margin-top: 4px !important;
+}
+
+/* Close button */
+[data-sonner-toast] [data-close-button] {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 6px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  color: #6b7280 !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: #111827 !important;
+  transform: scale(1.05) !important;
+}
+
+[data-sonner-toast] [data-close-button]:active {
+  transform: scale(0.95) !important;
+}
+
+/* Success Toast */
+[data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%) !important;
+  border-color: #86efac !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: #065f46 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: #059669 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: #10b981 !important;
+}
+
+/* Error Toast */
+[data-sonner-toast][data-type="error"] {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border-color: #fca5a5 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: #991b1b !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+/* Warning Toast */
+[data-sonner-toast][data-type="warning"] {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border-color: #fcd34d !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-title] {
+  color: #92400e !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-description] {
+  color: #d97706 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #f59e0b !important;
+}
+
+/* Info Toast */
+[data-sonner-toast][data-type="info"] {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border-color: #93c5fd !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-title] {
+  color: #1e40af !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-description] {
+  color: #2563eb !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: #3b82f6 !important;
+}
+
+/* Loading Toast */
+[data-sonner-toast][data-type="loading"] {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%) !important;
+  border-color: #d1d5db !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-title] {
+  color: #374151 !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-icon] {
+  color: #6b7280 !important;
+}
+
+/* Action buttons */
+[data-sonner-toast] [data-button] {
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  transition: all 0.15s ease !important;
+  border: 1px solid transparent !important;
+}
+
+[data-sonner-toast] [data-button]:hover {
+  transform: translateY(-1px) !important;
+}
+
+[data-sonner-toast] [data-button]:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Primary action button */
+[data-sonner-toast] button[data-button]:not([data-cancel]) {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
+[data-sonner-toast] button[data-button]:not([data-cancel]):hover {
+  background: #2563eb !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Cancel button */
+[data-sonner-toast] button[data-button][data-cancel] {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border-color: #e5e7eb !important;
+}
+
+[data-sonner-toast] button[data-button][data-cancel]:hover {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+/* Icon styling */
+[data-sonner-toast] [data-icon] {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 640px) {
+  [data-sonner-toaster] {
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  [data-sonner-toast] {
+    border-radius: 10px !important;
+    padding: 14px !important;
+    min-height: 56px !important;
+  }
+
+  [data-sonner-toast] [data-title] {
+    font-size: 13px !important;
+  }
+
+  [data-sonner-toast] [data-description] {
+    font-size: 12px !important;
+  }
+}
+
+/* ================================================
+   GLOBAL TEXT WRAP POLICY
+   Prevent visual cut-off for labels and values by overriding
+   truncation utilities used across the app.
+   ================================================ */
+@layer utilities {
+  .truncate {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  [class*="line-clamp-"] {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: unset !important;
+    line-clamp: unset !important;
+    -webkit-box-orient: initial !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+/* ================================================
+   THINNER BORDERS AND FOCUS RINGS OVERRIDE
+   Reduces all focus-ring-2/ring-2 border outlines from 2px to 1px
+   ================================================ */
