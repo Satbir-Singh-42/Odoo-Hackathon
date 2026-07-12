@@ -301,11 +301,11 @@ export function Dashboard({
 
   const stats = useMemo(() => {
     const activeAssetsForQuantity = assets.filter(
-      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.isBulkOrder,
+      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.bulkOrderParentId,
     );
 
     const allActiveAssets = assets.filter(
-      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.isBulkOrder,
+      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.bulkOrderParentId,
     );
 
     const parentChildCounts = new Map<string, number>();
@@ -403,7 +403,7 @@ export function Dashboard({
   const recentAssets = useMemo(
     () =>
       [...assets]
-        .filter((a) => !a.isBulkOrder)
+        .filter((a) => !a.bulkOrderParentId)
         .sort((a, b) => {
           const dateA = isViewer ? new Date(a.updatedAt || a.createdAt) : new Date(a.createdAt);
           const dateB = isViewer ? new Date(b.updatedAt || b.createdAt) : new Date(b.createdAt);
@@ -433,7 +433,7 @@ export function Dashboard({
   // Category and type data (memoized)
   const { categoryData, typeData } = useMemo(() => {
     const filteredAssets = assets.filter(
-      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.isBulkOrder,
+      (a) => a.status !== ASSET_STATUS.DISPOSED && !a.bulkOrderParentId,
     );
     const cats = Object.entries(
       filteredAssets.reduce((acc, asset) => {

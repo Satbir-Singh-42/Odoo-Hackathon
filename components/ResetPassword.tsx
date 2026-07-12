@@ -316,7 +316,7 @@ export function ResetPassword() {
             <Package className="w-8 h-8 text-white" />
           </div> */}
           <div className="inline-flex items-center justify-center w-14 h-14 bg-white rounded-2xl shadow-sm overflow-hidden mb-3">
-            <img src="/android-chrome-192x192.png" alt="Logo" className="w-full h-full object-cover" />
+            <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Inventory Management</h1>
           <p className="text-sm text-gray-600">Asset &amp; Maintenance System</p>

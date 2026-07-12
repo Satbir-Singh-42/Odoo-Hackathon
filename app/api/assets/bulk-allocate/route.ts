@@ -18,16 +18,22 @@ const bulkAllocateSchema = z.object({
       operatingSystem: z.string().optional().nullable(),
       conditionAtAllocation: z.string().optional().nullable(),
       quantity: z.number().optional().nullable(),
-    }).transform(val => ({
-      ...val,
-      employeeId: val.employeeId || undefined,
-      parentAssetId: val.parentAssetId || undefined,
-      installationLocation: val.installationLocation || undefined,
-      ipAddress: val.ipAddress || undefined,
-      operatingSystem: val.operatingSystem || undefined,
-      conditionAtAllocation: val.conditionAtAllocation || undefined,
-      quantity: val.quantity || undefined,
-    }))
+      targetUnitId: z.union([z.number(), z.string()]).optional().nullable(),
+    }).transform(val => {
+      const rawAssetId = val.targetUnitId || val.assetId;
+      const assetId = typeof rawAssetId === "number" ? rawAssetId : parseInt(String(rawAssetId), 10);
+      return {
+        ...val,
+        assetId: Number.isNaN(assetId) ? val.assetId : assetId,
+        employeeId: val.employeeId || undefined,
+        parentAssetId: val.parentAssetId || undefined,
+        installationLocation: val.installationLocation || undefined,
+        ipAddress: val.ipAddress || undefined,
+        operatingSystem: val.operatingSystem || undefined,
+        conditionAtAllocation: val.conditionAtAllocation || undefined,
+        quantity: val.quantity || undefined,
+      };
+    })
   ),
 });
 

@@ -2861,7 +2861,7 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* <Package className="w-7 h-7 sm:w-8 sm:h-8 text-blue-600 shrink-0" /> */}
               <img
-                src="/android-chrome-192x192.png"
+                src="/logo.svg"
                 alt="Logo"
                 className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 object-contain"
               />

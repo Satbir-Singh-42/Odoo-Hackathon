@@ -31,7 +31,7 @@ export function LoadingScreen() {
             <Package className="w-10 h-10 text-white" />
           </div> */}
           <div className="w-20 h-20 bg-white rounded-2xl shadow-xl overflow-hidden flex items-center justify-center mb-8 relative z-10">
-            <img src="/android-chrome-192x192.png" alt="Logo" className="w-full h-full object-cover" />
+            <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" />
           </div>
           
 

@@ -102,7 +102,7 @@ export function Login({ onLogin }: LoginProps) {
             <Package className="w-9 h-9 text-white" />
           </div> */}
           <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mb-3 sm:mb-4 bg-white rounded-2xl shadow-sm overflow-hidden">
-            <img src="/android-chrome-192x192.png" alt="Logo" className="w-full h-full object-cover" />
+            <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 px-2">
             {process.env.NEXT_PUBLIC_WEBSITE_NAME || "Inventory Management"}

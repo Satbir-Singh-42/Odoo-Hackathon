@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
 
   try {
-    const rawAssetId = bodyResult.data.assetId;
-    const numericAssetId = typeof rawAssetId === "number" ? rawAssetId : parseInt(rawAssetId, 10);
+    const rawAssetId = bodyResult.data.targetUnitId || bodyResult.data.assetId;
+    const numericAssetId = typeof rawAssetId === "number" ? rawAssetId : parseInt(String(rawAssetId), 10);
     if (Number.isNaN(numericAssetId)) {
       return badRequest("Invalid assetId");
     }

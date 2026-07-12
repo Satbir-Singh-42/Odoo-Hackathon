@@ -543,9 +543,13 @@ export const normalizeLicenseAllocation = (alloc: any): LicenseAllocation => {
     targetUnitId: alloc.targetUnitId ? String(alloc.targetUnitId) : null,
     assetCode: alloc.assetCode || alloc.asset?.assetCode || "",
     assetName: alloc.assetName || alloc.asset?.assetName || "",
+    // Each DB allocation row represents exactly 1 unit (no quantity column exists).
+    // This MUST be set here so computeAssetViewData's reduce() doesn't sum undefined → NaN.
+    licensesAllocated: alloc.licensesAllocated ?? 1,
     status,
   };
 };
+
 
 export const normalizeUser = (u: any): User => {
   if (!u) return u;
