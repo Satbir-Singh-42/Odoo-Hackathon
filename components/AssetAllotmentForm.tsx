@@ -669,7 +669,7 @@ export function AssetAllotmentForm({
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validation Error: ${err.errors[0].message}`);
+        toast.error(`Validation Error: ${(err as any).errors[0].message}`);
         return;
       }
     }
@@ -818,7 +818,7 @@ export function AssetAllotmentForm({
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validation Error: ${err.errors[0].message}`);
+        toast.error(`Validation Error: ${(err as any).errors[0].message}`);
         return;
       }
     }
