@@ -836,3 +836,117 @@ export async function bulkDeleteAssets(
   }
   return { deletedCount, errors };
 }
+
+export async function bulkUpdateAssets(
+  assetIds: number[],
+  updates: Record<string, any>,
+  performedBy: string
+) {
+  let updatedCount = 0;
+  const errors: string[] = [];
+
+  for (const id of assetIds) {
+    try {
+      await updateAsset(id, updates, performedBy);
+      updatedCount++;
+    } catch (err: any) {
+      errors.push(`Failed to update asset ID ${id}: ${err.message}`);
+    }
+  }
+  return { updatedCount, errors };
+}
+
+export async function bulkAllocateAssets(
+  allocations: AllocateAssetData[],
+  performedBy: string,
+  performedByName: string
+) {
+  const results = [];
+  const errors: string[] = [];
+  for (const alloc of allocations) {
+    try {
+      const result = await allocateAsset(alloc, performedBy, performedByName);
+      results.push(result);
+    } catch (err: any) {
+      errors.push(`Failed to allocate asset ID ${alloc.assetId}: ${err.message}`);
+    }
+  }
+  return { allocations: results, errors };
+}
+
+export async function bulkReturnAssets(
+  returns: ReturnAssetData[],
+  performedBy: string,
+  performedByName: string
+) {
+  let returnedCount = 0;
+  const errors: string[] = [];
+  for (const ret of returns) {
+    try {
+      await returnAsset(ret, performedBy, performedByName);
+      returnedCount++;
+    } catch (err: any) {
+      errors.push(`Failed to return asset ID ${ret.assetId || 'unknown'}: ${err.message}`);
+    }
+  }
+  return { returnedCount, errors };
+}
+
+export async function addUnitsToParent(
+  parentId: number,
+  count: number,
+  performedBy: string,
+  unitPrice?: number
+) {
+  const parent = await getAssetById(parentId);
+  if (!parent) throw new Error("Parent asset not found");
+  if (!parent.isBulkOrder) throw new Error("Asset is not a bulk order parent");
+
+  const childIds: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const nextUnitIndex = parent.totalQuantity + i + 1;
+    const childAssetCode = `${parent.assetCode}-${nextUnitIndex}`;
+
+    const child = await prisma.asset.create({
+      data: {
+        assetCode: childAssetCode,
+        assetName: `${parent.assetName} - Unit ${nextUnitIndex}`,
+        assetTypeId: parent.assetTypeId,
+        vendorId: parent.vendorId,
+        purchasePrice: unitPrice ?? parent.purchasePrice,
+        status: "Available",
+        totalQuantity: 1,
+        bulkOrderParentId: parent.id,
+        bulkOrderIndex: nextUnitIndex,
+      },
+    });
+
+    await prisma.assetHistory.create({
+      data: {
+        assetId: child.id,
+        actionType: "CREATE",
+        performedBy,
+        notes: `Bulk child unit ${nextUnitIndex} created for ${parent.assetCode}`,
+      },
+    });
+
+    childIds.push(child.id);
+  }
+
+  // Update parent quantity
+  await prisma.asset.update({
+    where: { id: parentId },
+    data: { totalQuantity: parent.totalQuantity + count },
+  });
+
+  await prisma.assetHistory.create({
+    data: {
+      assetId: parentId,
+      actionType: "UPDATE",
+      performedBy,
+      notes: `Added ${count} units. Total quantity is now ${parent.totalQuantity + count}`,
+    },
+  });
+
+  return { childIds, newTotal: parent.totalQuantity + count };
+}

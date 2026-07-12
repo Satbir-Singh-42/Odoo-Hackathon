@@ -344,3 +344,102 @@ export async function getUpcomingMaintenance(daysAhead = 7) {
     orderBy: { scheduledDate: "asc" },
   });
 }
+
+export async function createBulkMaintenance(
+  data: CreateMaintenanceData & { bulkParentId: number; skipAssetIds?: number[] },
+  performedBy: string,
+  performedByName: string
+) {
+  const parent = await prisma.asset.findUnique({
+    where: { id: data.bulkParentId },
+    include: { bulkChildren: true },
+  });
+
+  if (!parent) throw new Error("Bulk parent asset not found");
+  if (!parent.isBulkOrder) throw new Error("Asset is not a bulk order parent");
+
+  const skipSet = new Set(data.skipAssetIds || []);
+  const assetsToMaintain = parent.bulkChildren.filter(c => !skipSet.has(c.id));
+
+  // Also include the parent itself if it's not skipped
+  if (!skipSet.has(parent.id)) {
+    assetsToMaintain.unshift(parent as any);
+  }
+
+  if (assetsToMaintain.length === 0) {
+    throw new Error("No valid assets selected for bulk maintenance");
+  }
+
+  const results = [];
+  const errors: string[] = [];
+
+  for (const asset of assetsToMaintain) {
+    try {
+      const result = await createMaintenance(
+        { ...data, assetId: asset.id },
+        performedBy,
+        performedByName
+      );
+      results.push(result);
+    } catch (err: any) {
+      errors.push(`Failed to create maintenance for asset ID ${asset.id}: ${err.message}`);
+    }
+  }
+
+  // We return the maintenance record of the parent (or first item) as a representative, 
+  // with a message indicating how many were created vs skipped.
+  const mainRecord = results.find(r => r.assetId === parent.id) || results[0];
+  
+  if (!mainRecord) {
+    throw new Error(`Bulk maintenance failed: ${errors.join(', ')}`);
+  }
+
+  return {
+    ...mainRecord,
+    message: `Created maintenance for ${results.length} units. ${errors.length ? `${errors.length} failed.` : ''} ${skipSet.size > 0 ? `${skipSet.size} skipped.` : ''}`,
+  };
+}
+
+export async function reportTroubleshootIssue(
+  assetId: number,
+  reason: string,
+  reportedBy: string
+) {
+  // First, check if the asset exists
+  const asset = await prisma.asset.findUnique({ where: { id: assetId } });
+  if (!asset) throw new Error("Asset not found");
+
+  // Create a pending maintenance record or log the issue
+  const result = await prisma.maintenance.create({
+    data: {
+      assetId,
+      scheduledDate: new Date(),
+      status: "Scheduled",
+      description: "Troubleshooting Issue Reported",
+      notes: reason,
+      reportedBy,
+    },
+    include: {
+      asset: {
+        select: {
+          assetCode: true,
+          assetName: true,
+          assetType: { select: { categoryName: true } },
+        },
+      },
+      reporter: { select: { fullName: true, email: true } },
+    },
+  });
+
+  // Log in asset history
+  await prisma.assetHistory.create({
+    data: {
+      assetId,
+      actionType: "UPDATE",
+      performedBy: reportedBy,
+      notes: `Troubleshoot reported: ${reason}`,
+    },
+  });
+
+  return result;
+}
