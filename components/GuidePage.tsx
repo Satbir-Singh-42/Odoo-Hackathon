@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { BookOpen, ShieldCheck, Database, CalendarCheck, Settings, Users, Laptop } from 'lucide-react';
-import { AppContainer } from './AppContainer';
+import AppContainer from '@/components/AppContainer';
 
 export function GuidePage() {
   return (
