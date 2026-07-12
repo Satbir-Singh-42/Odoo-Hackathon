@@ -284,6 +284,9 @@ export async function createAsset(
     }
   }
 
+  const quantity = data.totalQuantity || 1;
+  const isBulk = (data.isBulkOrder ?? false) || quantity > 1;
+
   const asset = await prisma.asset.create({
     data: {
       assetCode: data.assetCode,
@@ -303,13 +306,13 @@ export async function createAsset(
       macAddress: data.macAddress,
       portCount: data.portCount,
       portSpeed: data.portSpeed,
-      totalQuantity: data.totalQuantity ?? 1,
+      totalQuantity: isBulk ? quantity : 1,
       licenseExpiryDate: data.licenseExpiryDate
         ? new Date(data.licenseExpiryDate)
         : null,
       licenseType: data.licenseType as any,
       condition: data.condition as any,
-      isBulkOrder: data.isBulkOrder ?? false,
+      isBulkOrder: isBulk,
       status: "Available",
     },
     include: { assetType: true, vendor: true },
@@ -328,6 +331,53 @@ export async function createAsset(
   await auditAsset("ASSET_INSERT", asset.id, performedBy, {
     newValues: { assetCode: asset.assetCode, assetName: asset.assetName },
   });
+
+  if (isBulk && quantity > 1) {
+    const childrenData = Array.from({ length: quantity }).map((_, idx) => {
+      const unitIndex = idx + 1;
+      return {
+        assetCode: `${asset.assetCode}-${String(unitIndex).padStart(2, "0")}`,
+        assetName: `${asset.assetName} - Unit ${unitIndex}`,
+        assetTypeId: asset.assetTypeId,
+        vendorId: asset.vendorId,
+        purchasePrice: asset.purchasePrice,
+        totalQuantity: 1,
+        isBulkOrder: false,
+        bulkOrderParentId: asset.id,
+        bulkOrderIndex: unitIndex,
+        status: "Available" as any,
+        condition: asset.condition,
+        invoiceNumber: asset.invoiceNumber,
+        invoiceDate: asset.invoiceDate,
+        purchaseNumber: asset.purchaseNumber,
+        prNumber: asset.prNumber,
+        model: asset.model,
+        ram: asset.ram,
+        storage: asset.storage,
+        processor: asset.processor,
+        portCount: asset.portCount,
+        portSpeed: asset.portSpeed,
+        licenseExpiryDate: asset.licenseExpiryDate,
+        licenseType: asset.licenseType,
+      };
+    });
+
+    await prisma.asset.createMany({ data: childrenData });
+
+    const children = await prisma.asset.findMany({
+      where: { bulkOrderParentId: asset.id },
+      select: { id: true, assetCode: true }
+    });
+
+    const historyData = children.map(c => ({
+      assetId: c.id,
+      actionType: "CREATION" as any,
+      performedBy,
+      notes: `Child unit created for bulk order: ${asset.assetCode}`,
+    }));
+
+    await prisma.assetHistory.createMany({ data: historyData });
+  }
 
   return asset;
 }

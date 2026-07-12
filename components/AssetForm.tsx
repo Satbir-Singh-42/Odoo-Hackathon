@@ -656,8 +656,8 @@ export function AssetForm({
                       }));
                   }}
                   options={visibleCategories.map((c) => ({
-                    value: c.id,
-                    label: c.id,
+                    value: c.name || c.id,
+                    label: c.name || c.id,
                   }))}
                   placeholder={canCreateCategory ? "Select or type new category..." : "Select a category..."}
                   creatable={canCreateCategory}

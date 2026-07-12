@@ -5,7 +5,7 @@ import {
   ok, created, serverError, badRequest,
 } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
-import { listTransferRequests, createTransferRequest } from "@/lib/services/transferService";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
@@ -19,12 +19,30 @@ export async function GET(req: NextRequest) {
   const authResult = await requireAuth(PERMISSIONS.ASSET_READ);
   if (isAuthError(authResult)) return authResult;
   try {
-    const sp = req.nextUrl.searchParams;
-    const status = sp.get("status") ?? undefined;
-    const requesterId = sp.get("requesterId") ?? undefined;
-    const currentHolderId = sp.get("currentHolderId") ?? undefined;
+    // Return recent transfers from AssetHistory
+    const histories = await prisma.assetHistory.findMany({
+      where: { actionType: "TRANSFER" },
+      orderBy: { actionDate: "desc" },
+      take: 50,
+      include: {
+        asset: { select: { id: true, assetCode: true, assetName: true } },
+        employee: { select: { id: true, fullName: true, email: true } }
+      }
+    });
 
-    const result = await listTransferRequests({ status, requesterId, currentHolderId });
+    const result = {
+      data: histories.map(h => ({
+        id: h.id,
+        assetId: h.assetId,
+        requesterId: h.employeeId,
+        currentHolderId: h.performedBy,
+        status: "COMPLETED",
+        reason: h.notes,
+        createdAt: h.actionDate,
+        asset: h.asset,
+        requester: h.employee
+      }))
+    };
     return ok(result);
   } catch (err) {
     return serverError(err);
@@ -40,17 +58,58 @@ export async function POST(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
 
   try {
-    const transfer = await createTransferRequest({
-      assetId: bodyResult.data.assetId,
-      requesterId: session.user.employeeId,
-      reason: bodyResult.data.reason,
-    }, session.user.employeeId);
+    const { assetId, reason } = bodyResult.data;
+    
+    // 1. Find active allocation
+    const activeAlloc = await prisma.allocation.findFirst({
+      where: { assetId, status: "ACTIVE", isDeleted: false }
+    });
 
-    // Revalidate paths
+    if (!activeAlloc) {
+      return badRequest("Asset is not currently allocated to anyone.");
+    }
+
+    // 2. Perform Transfer Transaction
+    const transfer = await prisma.$transaction(async (tx) => {
+      // Return old
+      await tx.allocation.update({
+        where: { id: activeAlloc.id },
+        data: { status: "RETURNED", returnDate: new Date(), returnNotes: "Transferred" }
+      });
+
+      // Create new
+      const newAlloc = await tx.allocation.create({
+        data: {
+          assetId,
+          employeeId: session.user.employeeId,
+          status: "ACTIVE",
+          assignedBy: session.user.employeeId,
+          allocationDate: new Date()
+        }
+      });
+
+      // Log History
+      await tx.assetHistory.create({
+        data: {
+          assetId,
+          employeeId: session.user.employeeId,
+          actionType: "TRANSFER",
+          performedBy: activeAlloc.employeeId || "System",
+          notes: reason || "Direct Transfer"
+        }
+      });
+
+      return newAlloc;
+    });
+
     revalidatePath("/allocations");
     revalidatePath("/dashboard");
 
-    return created(transfer);
+    return created({
+      id: transfer.id,
+      assetId: transfer.assetId,
+      status: "COMPLETED"
+    });
   } catch (err) {
     if (err instanceof Error) {
       return badRequest(err.message);

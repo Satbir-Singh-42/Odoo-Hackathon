@@ -1200,11 +1200,12 @@ export function AssetList({
   onDisposeAsset,
   onBulkImportComplete,
   maintenanceRecords = [],
-  hideBulkChildUnits = true,
+  hideBulkChildUnits = false,
   userRole = "Viewer" as UserRole,
   vendors = [],
   managedCategories = [],
 }: AssetListProps) {
+  const [showIndividualUnits, setShowIndividualUnits] = useState(!hideBulkChildUnits);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -1290,7 +1291,7 @@ export function AssetList({
   }, [showFilters]);
 
   // Role-aware unit visibility: viewers must see assigned child units.
-  const shouldHideBulkChildUnits = hideBulkChildUnits;
+  const shouldHideBulkChildUnits = !showIndividualUnits;
 
   // Total count of assets visible in the list (excludes hidden bulk child units)
   const totalListableAssets = useMemo(
@@ -1708,6 +1709,19 @@ export function AssetList({
               className="hidden sm:block">
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </motion.div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowIndividualUnits((prev) => !prev)}
+            className={`flex items-center justify-center gap-1.5 px-3 h-9 sm:h-10 border rounded-lg transition-all shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap ${
+              showIndividualUnits
+                ? "bg-blue-50 border-blue-300 text-blue-700 font-semibold"
+                : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+            }`}
+            title="Toggle whether individual asset units or grouped parents are shown in table">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: showIndividualUnits ? "#2563eb" : "#9ca3af" }} />
+            <span>{showIndividualUnits ? "Showing All Units" : "Grouped Parents"}</span>
           </button>
 
           {hasActiveFilters && (

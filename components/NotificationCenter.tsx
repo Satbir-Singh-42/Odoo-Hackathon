@@ -331,19 +331,19 @@ function AdminFormModal({
   }, [currentAdminEmails, currentManagerEmails]);
 
   const toggleRow = (index: number) => {
-    setRows((prev) => {
-      const next = [...prev];
-      next[index].selected = !next[index].selected;
-      return next;
-    });
+    setRows((prev) =>
+      prev.map((row, i) =>
+        i === index ? { ...row, selected: !row.selected } : row
+      )
+    );
   };
 
   const updateEditedEmail = (index: number, val: string) => {
-    setRows((prev) => {
-      const next = [...prev];
-      next[index].editedEmail = val;
-      return next;
-    });
+    setRows((prev) =>
+      prev.map((row, i) =>
+        i === index ? { ...row, editedEmail: val } : row
+      )
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -501,13 +501,14 @@ function AdminFormModal({
                             </tr>
                           )}
                           <tr
-                            className={`transition-all ${row.selected ? "bg-blue-50/20" : "hover:bg-gray-50"}`}>
-                            <td className="px-5 py-3 text-center">
+                            onClick={() => toggleRow(idx)}
+                            className={`transition-all cursor-pointer ${row.selected ? "bg-blue-50/20" : "hover:bg-gray-50"}`}>
+                            <td className="px-5 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="checkbox"
                                 checked={row.selected}
                                 onChange={() => toggleRow(idx)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                               />
                             </td>
                             <td className="px-5 py-3 font-medium text-gray-900">

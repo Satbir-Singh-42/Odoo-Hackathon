@@ -5,47 +5,64 @@ import {
   ok, created, serverError, badRequest,
 } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
-import { listAuditCycles, createAuditCycle } from "@/lib/services/auditService";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
-const createAuditCycleSchema = z.object({
-  name: z.string().min(1).max(100),
-  departmentId: z.number(),
-  startDate: z.string(),
-  endDate: z.string(),
-  auditorIds: z.array(z.string()),
+const createAuditSchema = z.object({
+  assetId: z.number(),
+  status: z.enum(["VERIFIED", "DISCREPANCY"]),
+  notes: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
   const authResult = await requireAuth(PERMISSIONS.ASSET_READ);
   if (isAuthError(authResult)) return authResult;
   try {
-    const result = await listAuditCycles();
-    return ok(result);
+    // Return recent audits from AssetHistory
+    const histories = await prisma.assetHistory.findMany({
+      where: { 
+        actionType: { in: ["AUDIT_VERIFIED", "AUDIT_DISCREPANCY"] } 
+      },
+      orderBy: { actionDate: "desc" },
+      take: 50,
+      include: {
+        asset: { select: { id: true, assetCode: true, assetName: true } },
+        employee: { select: { id: true, fullName: true, email: true } }
+      }
+    });
+
+    return ok({ data: histories });
   } catch (err) {
     return serverError(err);
   }
 }
 
 export async function POST(req: NextRequest) {
-  // Only Managers and Admins can start verification audits
   const authResult = await requireAuth(PERMISSIONS.ASSET_UPDATE);
   if (isAuthError(authResult)) return authResult;
   const { session } = authResult;
 
-  const bodyResult = await parseBody(req, createAuditCycleSchema);
+  const bodyResult = await parseBody(req, createAuditSchema);
   if (isParseError(bodyResult)) return bodyResult;
 
   try {
-    const cycle = await createAuditCycle(bodyResult.data, session.user.employeeId);
+    const { assetId, status, notes } = bodyResult.data;
 
-    // Revalidate paths
+    const audit = await prisma.assetHistory.create({
+      data: {
+        assetId,
+        actionType: status === "VERIFIED" ? "AUDIT_VERIFIED" : "AUDIT_DISCREPANCY",
+        notes: notes || "Audited via System",
+        performedBy: session.user.employeeId,
+      }
+    });
+
     revalidatePath("/audits");
     revalidatePath("/dashboard");
 
-    return created(cycle);
+    return created(audit);
   } catch (err) {
     if (err instanceof Error) {
       return badRequest(err.message);

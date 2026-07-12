@@ -5,14 +5,14 @@ import {
   ok, created, serverError, badRequest,
 } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
-import { listBookings, createBooking } from "@/lib/services/bookingService";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
 const createBookingSchema = z.object({
   assetId: z.number(),
-  startTime: z.string().datetime() || z.string(), // accommodate string datetimes
+  startTime: z.string().datetime() || z.string(),
   endTime: z.string().datetime() || z.string(),
   purpose: z.string().max(255).optional(),
 });
@@ -24,21 +24,41 @@ export async function GET(req: NextRequest) {
     const sp = req.nextUrl.searchParams;
     const assetId = sp.get("assetId") ? parseInt(sp.get("assetId")!, 10) : undefined;
     const userId = sp.get("userId") ?? undefined;
-    const status = sp.get("status") ?? undefined;
 
-    const result = await listBookings({
-      assetId: isNaN(assetId as any) ? undefined : assetId,
-      userId,
-      status,
+    const allocations = await prisma.allocation.findMany({
+      where: {
+        assetId,
+        employeeId: userId,
+        allocationDate: { gt: new Date() }, // Future allocations act as bookings
+        isDeleted: false,
+      },
+      include: {
+        asset: { select: { id: true, assetCode: true, assetName: true } },
+        employee: { select: { id: true, fullName: true, email: true } }
+      },
+      orderBy: { allocationDate: 'asc' }
     });
-    return ok(result);
+
+    const bookings = allocations.map(a => ({
+      id: a.id,
+      assetId: a.assetId,
+      userId: a.employeeId,
+      startTime: a.allocationDate,
+      endTime: a.returnDate || a.allocationDate,
+      status: "UPCOMING",
+      purpose: a.returnNotes || "No purpose provided",
+      asset: a.asset,
+      user: a.employee
+    }));
+
+    return ok(bookings);
   } catch (err) {
     return serverError(err);
   }
 }
 
 export async function POST(req: NextRequest) {
-  const authResult = await requireAuth(PERMISSIONS.ASSET_READ); // All authenticated users can book resources
+  const authResult = await requireAuth(PERMISSIONS.ASSET_READ);
   if (isAuthError(authResult)) return authResult;
   const { session } = authResult;
 
@@ -46,19 +66,31 @@ export async function POST(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
 
   try {
-    const booking = await createBooking({
-      assetId: bodyResult.data.assetId,
-      userId: session.user.employeeId, // Set to the logged-in user
-      startTime: bodyResult.data.startTime,
-      endTime: bodyResult.data.endTime,
-      purpose: bodyResult.data.purpose,
-    }, session.user.employeeId);
+    const allocation = await prisma.allocation.create({
+      data: {
+        assetId: bodyResult.data.assetId,
+        employeeId: session.user.employeeId,
+        allocationDate: new Date(bodyResult.data.startTime),
+        returnDate: new Date(bodyResult.data.endTime),
+        status: 'ACTIVE',
+        returnNotes: bodyResult.data.purpose,
+        assignedBy: session.user.employeeId,
+      }
+    });
 
-    // On-Demand Revalidation
     revalidatePath("/bookings");
     revalidatePath("/dashboard");
+    revalidatePath("/assets");
 
-    return created(booking);
+    return created({
+      id: allocation.id,
+      assetId: allocation.assetId,
+      userId: allocation.employeeId,
+      startTime: allocation.allocationDate,
+      endTime: allocation.returnDate,
+      status: "UPCOMING",
+      purpose: allocation.returnNotes
+    });
   } catch (err) {
     if (err instanceof Error) {
       return badRequest(err.message);

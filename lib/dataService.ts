@@ -1095,7 +1095,26 @@ export const dataService = {
   async getCategories(): Promise<Category[]> {
     const result = await apiClient.get("/categories");
     const rawList = Array.isArray(result) ? result : (result?.categories || result?.data || []);
-    return Array.isArray(rawList) ? rawList : [];
+    return (Array.isArray(rawList) ? rawList : []).map((c: any) => ({
+      ...c,
+      id: c.name || c.id,
+      name: c.name || c.id,
+    }));
+  },
+
+  async createCategory(data: { name: string; fields?: string[] }): Promise<any> {
+    const result = await apiClient.post("/categories", data);
+    return result.data || result;
+  },
+
+  async updateCategory(id: string, data: { name?: string; fields?: string[] }): Promise<any> {
+    const result = await apiClient.put(`/categories/${id}`, data);
+    return result.data || result;
+  },
+
+  async deleteCategory(id: string): Promise<any> {
+    const result = await apiClient.delete(`/categories/${id}`);
+    return result.data || result;
   },
 
   async getAssetTypes(

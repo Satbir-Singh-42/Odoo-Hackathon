@@ -7,44 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
 model AssetType {
   id           Int      @id @default(autoincrement())
   categoryName String   @db.VarChar(20)
@@ -70,32 +32,23 @@ model Vendor {
 }
 
 model User {
-  id                 String              @id @db.VarChar(20)
-  fullName           String              @db.VarChar(100)
-  department         String?             @db.VarChar(50)
-  email              String?             @db.VarChar(255)
-  password           String?             @db.VarChar(255)
-  role               UserRole            @default(Viewer)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  isDeleted          Boolean             @default(false)
-  isBlocked          Boolean             @default(false)
-  lastLogoutAt       DateTime?
-  managedCategories  String?             @default("ALL") @db.VarChar(500)
-  accounts           Account[]
+  id                String    @id @db.VarChar(20)
+  fullName          String    @db.VarChar(100)
+  department        String?   @db.VarChar(50)
+  email             String?   @db.VarChar(255)
+  password          String?   @db.VarChar(255)
+  role              UserRole  @default(Viewer)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isDeleted         Boolean   @default(false)
+  isBlocked         Boolean   @default(false)
+  lastLogoutAt      DateTime?
+  managedCategories String?   @default("ALL") @db.VarChar(500)
+
   allocations        Allocation[]
   assetHistory       AssetHistory[]
   inAppNotifications InAppNotification[]
   maintenanceReports Maintenance[]       @relation("ReportedByUser")
-  sessions           Session[]
-  departmentId       Int?
-  departmentRef      Department?         @relation("UserDepartment", fields: [departmentId], references: [id])
-  headOfDepartments  Department[]        @relation("DepartmentHead")
-  bookings           Booking[]
-  transferHeld       TransferRequest[]   @relation("TransferCurrentHolder")
-  transferRequested  TransferRequest[]   @relation("TransferRequester")
-  auditorCycles      AuditCycleAuditor[] @relation("AuditorInCycles")
-  verifiedItems      AuditItem[]         @relation("VerifiedByAuditor")
 
   @@index([role])
   @@map("users")
@@ -146,10 +99,6 @@ model Asset {
   documents         Document[]
   notifications     InAppNotification[]
   maintenance       Maintenance[]
-  bookings          Booking[]
-  transferRequests  TransferRequest[]
-  auditItems        AuditItem[]
-  discrepancies     DiscrepancyReport[]
 
   @@index([status])
   @@index([assetTypeId])
@@ -181,7 +130,6 @@ model Allocation {
   asset                 Asset            @relation(fields: [assetId], references: [id])
   employee              User?            @relation(fields: [employeeId], references: [id])
   parentAsset           Asset?           @relation("ParentAssetAllocations", fields: [parentAssetId], references: [id])
-  transferRequests      TransferRequest[]
 
   @@index([assetId])
   @@index([employeeId])
@@ -423,25 +371,6 @@ enum NotificationStatus {
   SUPPRESSED
 }
 
-model Department {
-  id                 Int          @id @default(autoincrement())
-  name               String       @unique @db.VarChar(100)
-  departmentHeadId   String?      @db.VarChar(20)
-  parentDepartmentId Int?
-  status             String       @default("Active")
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  isDeleted          Boolean      @default(false)
-
-  head               User?        @relation("DepartmentHead", fields: [departmentHeadId], references: [id])
-  parent             Department?  @relation("SubDepartments", fields: [parentDepartmentId], references: [id])
-  subDepartments     Department[] @relation("SubDepartments")
-  auditCycles        AuditCycle[]
-  users              User[]       @relation("UserDepartment")
-
-  @@map("departments")
-}
-
 model AssetCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique @db.VarChar(100)
@@ -450,105 +379,4 @@ model AssetCategory {
   updatedAt DateTime @updatedAt
 
   @@map("asset_categories")
-}
-
-model Booking {
-  id        Int      @id @default(autoincrement())
-  assetId   Int
-  userId    String   @db.VarChar(20)
-  startTime DateTime
-  endTime   DateTime
-  status    String   @default("UPCOMING")
-  purpose   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  asset Asset @relation(fields: [assetId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
-
-  @@index([assetId, startTime, endTime, status])
-  @@map("bookings")
-}
-
-model TransferRequest {
-  id              Int      @id @default(autoincrement())
-  assetId         Int
-  currentHolderId String   @db.VarChar(20)
-  requesterId     String   @db.VarChar(20)
-  allocationId    Int
-  status          String   @default("PENDING")
-  reason          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  asset         Asset      @relation(fields: [assetId], references: [id])
-  currentHolder User       @relation("TransferCurrentHolder", fields: [currentHolderId], references: [id])
-  requester     User       @relation("TransferRequester", fields: [requesterId], references: [id])
-  allocation    Allocation @relation(fields: [allocationId], references: [id])
-
-  @@map("transfer_requests")
-}
-
-model AuditCycle {
-  id           Int      @id @default(autoincrement())
-  name         String
-  departmentId Int
-  startDate    DateTime
-  endDate      DateTime
-  status       String   @default("DRAFT")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  department          Department            @relation(fields: [departmentId], references: [id])
-  auditors            AuditCycleAuditor[]
-  items               AuditItem[]
-  discrepancyReports DiscrepancyReport[]
-
-  @@map("audit_cycles")
-}
-
-model AuditCycleAuditor {
-  id           Int    @id @default(autoincrement())
-  auditCycleId Int
-  auditorId    String @db.VarChar(20)
-
-  auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
-  auditor    User       @relation("AuditorInCycles", fields: [auditorId], references: [id])
-
-  @@unique([auditCycleId, auditorId])
-  @@map("audit_cycle_auditors")
-}
-
-model AuditItem {
-  id           Int       @id @default(autoincrement())
-  auditCycleId Int
-  assetId      Int
-  status       String    @default("PENDING")
-  notes        String?
-  verifiedAt   DateTime?
-  verifiedById String?   @db.VarChar(20)
-
-  auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
-  asset      Asset      @relation(fields: [assetId], references: [id])
-  verifiedBy User?      @relation("VerifiedByAuditor", fields: [verifiedById], references: [id])
-
-  @@unique([auditCycleId, assetId])
-  @@map("audit_items")
-}
-
-model DiscrepancyReport {
-  id              Int      @id @default(autoincrement())
-  auditCycleId    Int
-  assetId         Int
-  description     String
-  resolved        Boolean  @default(false)
-  resolutionNotes String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
-  asset      Asset      @relation(fields: [assetId], references: [id])
-
-  @@unique([auditCycleId, assetId])
-  @@map("discrepancy_reports")
 }
