@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * GET    /api/maintenance/:id
  * PUT    /api/maintenance/:id
@@ -66,6 +67,9 @@ export async function PUT(
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/maintenance");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok(updated);
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {
@@ -86,6 +90,9 @@ export async function DELETE(
   try {
     const { id } = await params;
     await deleteMaintenance(parseInt(id, 10), session.user.employeeId);
+    revalidatePath("/maintenance");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return noContent();
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {

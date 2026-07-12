@@ -3,6 +3,7 @@
  * DELETE /api/inapp-notifications/[id]     — soft-delete a single notification
  */
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   requireAuth,
   isAuthError,
@@ -35,6 +36,7 @@ export async function PUT(
     if (!existing) return notFound("Notification not found");
 
     await markNotificationsRead(session.user.employeeId, [notifId]);
+    revalidatePath("/dashboard");
     return noContent();
   } catch (err) {
     return serverError(err);
@@ -55,6 +57,7 @@ export async function DELETE(
     if (isNaN(notifId)) return notFound("Invalid notification ID");
 
     await deleteInAppNotification(notifId, session.user.employeeId);
+    revalidatePath("/dashboard");
     return noContent();
   } catch (err) {
     return serverError(err);

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * POST /api/assets/:id/dispose — dispose of an asset
  */
@@ -36,6 +37,9 @@ export async function POST(
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok({ status: "success", message: "Asset disposed successfully." });
   } catch (err) {
     if (err instanceof Error) {

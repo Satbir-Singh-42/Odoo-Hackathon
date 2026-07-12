@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * POST /api/assets/allocate-license — allocate a software license to an employee or asset
  */
@@ -66,6 +67,9 @@ export async function POST(req: NextRequest) {
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok(allocation, 201);
   } catch (err) {
     if (err instanceof Error) {

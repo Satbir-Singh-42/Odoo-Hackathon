@@ -121,8 +121,15 @@ export async function getAssetsAction(params: GetAssetsParams) {
 
   const total = await prisma.asset.count({ where });
 
+  const formattedAssets = assets.map((asset: any) => ({
+    ...asset,
+    category: asset.assetType?.categoryName || "",
+    assetType: asset.assetType?.typeName || "",
+    vendorName: asset.vendor?.vendorName || "",
+  }));
+
   return {
-    assets,
+    assets: formattedAssets,
     total,
     page,
     pageSize,

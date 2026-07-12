@@ -18,6 +18,8 @@ import {
   ChevronUp,
   MapPin,
 } from "lucide-react";
+import { z } from "zod";
+import { allotmentSchema } from "@/lib/validations";
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from "sonner";
 import { getErrorMessage } from '@/lib/utils/errorHelpers';
@@ -656,6 +658,22 @@ export function AssetAllotmentForm({
       return;
     }
 
+    try {
+      validRows.forEach(r => {
+        allotmentSchema.parse({
+          employeeId: allocationType === "User" ? r.targetId : undefined,
+          targetUnitId: allocationType === "Asset" ? r.targetId : undefined,
+          installationLocation: allocationType === "Location" ? r.location : undefined,
+          allocationDate: r.date,
+        });
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validation Error: ${err.errors[0].message}`);
+        return;
+      }
+    }
+
     const unitIds = validRows.map((r) => r.unitId);
     if (new Set(unitIds).size !== unitIds.length) {
       toast.error("Cannot allocate the same unit multiple times.");
@@ -790,6 +808,20 @@ export function AssetAllotmentForm({
     if (allocationType === "User" && !selectedUserId) return;
     if (allocationType === "Asset" && !selectedAssetId) return;
     if (allocationType === "Location" && !allocationLocation.trim()) return;
+
+    try {
+      allotmentSchema.parse({
+        employeeId: allocationType === "User" ? selectedUserId : undefined,
+        targetUnitId: allocationType === "Asset" ? selectedAssetId : undefined,
+        installationLocation: allocationType === "Location" ? allocationLocation : undefined,
+        allocationDate: allocationDate,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validation Error: ${err.errors[0].message}`);
+        return;
+      }
+    }
 
     // Always allocate exactly 1 unit
     if (availableLicenses < 1) {

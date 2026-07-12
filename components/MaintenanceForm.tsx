@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { X, Save, AlertTriangle, XCircle } from "lucide-react";
+import { z } from "zod";
+import { maintenanceSchema } from "@/lib/validations";
 import {
   MaintenanceRecord,
   Asset,
@@ -464,12 +466,17 @@ export function MaintenanceForm({
   ]);
 
   const validateForm = useCallback(() => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.assetId) newErrors.assetId = "Asset is required";
-    if (!formData.description?.trim())
-      newErrors.description = "Description is required";
-    if (!formData.scheduledDate)
-      newErrors.scheduledDate = "Scheduled date is required";
+    let newErrors: Record<string, string> = {};
+
+    try {
+      maintenanceSchema.parse(formData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        err.errors.forEach(e => {
+          if (e.path[0]) newErrors[e.path[0].toString()] = e.message;
+        });
+      }
+    }
     // Block scheduling before the previous maintenance's completion date
     if (formData.scheduledDate && latestCompletionDate) {
       const scheduled = new Date(formData.scheduledDate);

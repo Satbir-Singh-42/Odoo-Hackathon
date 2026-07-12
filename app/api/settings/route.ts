@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAuth, isAuthError, ok, serverError, parseBody, isParseError } from "@/lib/api-helpers";
@@ -22,6 +23,9 @@ export async function PATCH(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
   try {
     await updateSystemSettings(bodyResult.data);
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok({ status: "success", message: "Settings updated." });
   } catch (err) { return serverError(err); }
 }

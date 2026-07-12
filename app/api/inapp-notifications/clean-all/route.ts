@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * DELETE /api/inapp-notifications/clean-all — soft-delete ALL notifications for the current user
  */
@@ -23,6 +24,7 @@ export async function DELETE() {
       data: { isDeleted: true },
     });
 
+    revalidatePath("/dashboard");
     return ok({ cleared: result.count, message: `${result.count} notification(s) cleared.` });
   } catch (err) {
     return serverError(err);

@@ -3,6 +3,7 @@
  * (This is the exact sub-path that dataService calls: PUT /inapp-notifications/{id}/read)
  */
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   requireAuth,
   isAuthError,
@@ -35,6 +36,7 @@ export async function PUT(
     if (!existing) return notFound("Notification not found");
 
     await markNotificationsRead(session.user.employeeId, [notifId]);
+    revalidatePath("/dashboard");
     return noContent();
   } catch (err) {
     return serverError(err);

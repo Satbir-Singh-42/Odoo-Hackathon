@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * POST /api/assets/allocate — allocate an asset to an employee or parent asset
  */
@@ -66,6 +67,9 @@ export async function POST(req: NextRequest) {
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok(allocation, 201);
   } catch (err) {
     if (err instanceof Error) {

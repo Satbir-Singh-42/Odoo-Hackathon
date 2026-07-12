@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { requireAuth, isAuthError, ok, serverError, parseBody, isParseError } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
   try {
     const result = await bulkCreateVendors(bodyResult.data.vendors, session.user.employeeId);
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok(result);
   } catch (err) {
     return serverError(err);

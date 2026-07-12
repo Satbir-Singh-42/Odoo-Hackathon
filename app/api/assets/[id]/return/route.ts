@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * POST /api/assets/:id/return — return an allocated asset
  */
@@ -37,6 +38,9 @@ export async function POST(
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok({ status: "success", message: "Asset returned successfully." });
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {

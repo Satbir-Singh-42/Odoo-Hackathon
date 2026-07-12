@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { requireAuth, isAuthError, ok, serverError, parseBody, isParseError } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -18,6 +19,9 @@ export async function POST(req: NextRequest) {
   if (isParseError(bodyResult)) return bodyResult;
   try {
     const result = await bulkImportAssets(bodyResult.data.assets, session.user.employeeId);
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok(result);
   } catch (err) {
     return serverError(err);

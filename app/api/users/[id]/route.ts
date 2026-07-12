@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * GET    /api/users/:id
  * PUT    /api/users/:id
@@ -61,6 +62,9 @@ export async function PUT(
   try {
     const { id } = await params;
     const updated = await updateUser(id, bodyResult.data, session.user.employeeId);
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok(updated);
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {
@@ -81,6 +85,9 @@ export async function DELETE(
   try {
     const { id } = await params;
     await deleteUser(id, session.user.employeeId);
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return noContent();
   } catch (err) {
     if (err instanceof Error) {

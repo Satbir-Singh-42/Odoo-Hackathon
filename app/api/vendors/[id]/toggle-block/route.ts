@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { requireAuth, isAuthError, ok, notFound, serverError } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -12,6 +13,9 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     const result = await toggleVendorBlock(id, session.user.employeeId);
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok(result);
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) return notFound(err.message);

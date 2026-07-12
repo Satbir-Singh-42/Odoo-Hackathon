@@ -7,7 +7,7 @@ export async function getAssetsData(params: { managedCategories?: string[] } = {
     where.assetType = { categoryName: { in: params.managedCategories } };
   }
   
-  const assets = await prisma.asset.findMany({
+  const rawAssets = await prisma.asset.findMany({
     where,
     include: {
       assetType: { select: { categoryName: true, typeName: true } },
@@ -24,12 +24,19 @@ export async function getAssetsData(params: { managedCategories?: string[] } = {
     take: 10000,
   });
   
+  const assets = rawAssets.map((asset: any) => ({
+    ...asset,
+    category: asset.assetType?.categoryName || "",
+    assetType: asset.assetType?.typeName || "",
+    vendorName: asset.vendor?.vendorName || "",
+  }));
+  
   // Serialize dates to strings for Next.js Server Components passing to Client Components
   return JSON.parse(JSON.stringify(assets));
 }
 
 export async function getMaintenanceData() {
-  const maintenance = await prisma.maintenance.findMany({
+  const rawMaintenance = await prisma.maintenance.findMany({
     where: { isDeleted: false },
     include: {
       asset: {
@@ -43,11 +50,20 @@ export async function getMaintenanceData() {
     },
     orderBy: { updatedAt: "desc" },
   });
+
+  const maintenance = rawMaintenance.map((m: any) => ({
+    ...m,
+    assetCode: m.asset?.assetCode || "",
+    assetName: m.asset?.assetName || "",
+    category: m.asset?.assetType?.categoryName || "",
+    assetType: m.asset?.assetType?.typeName || "",
+  }));
+
   return JSON.parse(JSON.stringify(maintenance));
 }
 
 export async function getLicenseAllocationsData() {
-  const allocations = await prisma.allocation.findMany({
+  const rawAllocations = await prisma.allocation.findMany({
     where: { isDeleted: false, status: "ACTIVE" },
     include: {
       asset: { select: { assetCode: true, assetName: true } },
@@ -55,6 +71,15 @@ export async function getLicenseAllocationsData() {
     },
     orderBy: { allocationDate: "desc" },
   });
+
+  const allocations = rawAllocations.map((a: any) => ({
+    ...a,
+    assetCode: a.asset?.assetCode || "",
+    assetName: a.asset?.assetName || "",
+    userName: a.employee?.fullName || "",
+    department: a.employee?.department || "",
+  }));
+
   return JSON.parse(JSON.stringify(allocations));
 }
 

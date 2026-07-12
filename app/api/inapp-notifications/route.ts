@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { requireAuth, isAuthError, ok, serverError } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
       page: sp.get("page") ? parseInt(sp.get("page")!, 10) : 1,
       pageSize: sp.get("pageSize") ? parseInt(sp.get("pageSize")!, 10) : 30,
     });
+    revalidatePath("/dashboard");
     return ok(result);
   } catch (err) { return serverError(err); }
 }

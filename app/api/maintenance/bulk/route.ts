@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { requireAuth, isAuthError, ok, serverError, parseBody, isParseError } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/maintenance");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok({ data: result, message: result.message });
   } catch (err) {
     return serverError(err);

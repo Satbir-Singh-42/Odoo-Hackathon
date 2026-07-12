@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * POST /api/assets/dispose — dispose of an asset
  */
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest) {
       session.user.employeeId,
       session.user.fullName
     );
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/allocations");
     return ok({ success: true, assetId: numericAssetId });
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {

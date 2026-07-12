@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { X, Save, AlertTriangle, Plus, Minus } from "lucide-react";
+import { z } from "zod";
+import { assetSchema } from "@/lib/validations";
 import { Asset, Vendor, Category, LicenseAllocation } from '@/types';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import dataService from '@/lib/dataService';
@@ -311,32 +313,27 @@ export function AssetForm({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    let newErrors: Record<string, string> = {};
 
-    // Required fields based on database schema (NOT NULL constraints)
-    if (!formData.assetCode?.trim()) {
-      newErrors.assetCode = "Asset Code is required";
-    } else {
-      // Check for duplicate Asset Code (client-side check against loaded assets)
-      const isDuplicate = assets.some(
-        (a) =>
-          a.assetCode?.toLowerCase() === formData.assetCode?.toLowerCase() &&
-          a.id !== asset?.id, // Exclude current asset when editing
-      );
-      if (isDuplicate) {
-        newErrors.assetCode =
-          "This Asset Code is already in use. Please use a unique code.";
+    try {
+      assetSchema.parse(formData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        err.errors.forEach(e => {
+          if (e.path[0]) newErrors[e.path[0].toString()] = e.message;
+        });
       }
     }
 
-    if (!formData.assetName?.trim()) {
-      newErrors.assetName = "Asset Name is required";
-    }
-    if (!formData.category?.trim()) {
-      newErrors.category = "Category is required";
-    }
-    if (!formData.assetType?.trim()) {
-      newErrors.assetType = "Asset Type is required";
+    // Check for duplicate Asset Code (client-side check against loaded assets)
+    const isDuplicate = assets.some(
+      (a) =>
+        a.assetCode?.toLowerCase() === formData.assetCode?.toLowerCase() &&
+        a.id !== asset?.id, // Exclude current asset when editing
+    );
+    if (isDuplicate) {
+      newErrors.assetCode =
+        "This Asset Code is already in use. Please use a unique code.";
     }
 
     // Check for duplicate Serial Number (for non-software categories)
@@ -375,9 +372,6 @@ export function AssetForm({
     }
 
     // Business rule validations
-    if (!formData.vendorId?.trim()) {
-      newErrors.vendorId = "Vendor is required";
-    }
     if (isSoftwareLikeCategory(formData.category || "")) {
       if (!formData.licenseType) {
         newErrors.licenseType = "License Type is required for Software";

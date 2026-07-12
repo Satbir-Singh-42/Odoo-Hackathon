@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 /**
  * DELETE /api/audit-logs/clear?months=N
  * Clears audit logs older than N months (Admin only).
@@ -34,6 +35,9 @@ export async function DELETE(req: NextRequest) {
       data: { isDeleted: true },
     });
 
+    revalidatePath("/settings");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
     return ok({
       message: `${result.count} audit log(s) older than ${months} month(s) have been cleared.`,
       count: result.count,
