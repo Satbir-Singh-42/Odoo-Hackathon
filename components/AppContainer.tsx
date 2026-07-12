@@ -1641,9 +1641,11 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
 
           // Refresh only assets + allocations — history and maintenance are unaffected by allocation
           refreshAllocationData(false, "allocation");
+          window.dispatchEvent(new CustomEvent("refreshNotifications"));
         } catch (err) {
           // Still refresh data because a failure (like 409 Conflict) means our client data is stale
           refreshAllocationData(false, "allocation");
+          window.dispatchEvent(new CustomEvent("refreshNotifications"));
           throw err;
         }
       },

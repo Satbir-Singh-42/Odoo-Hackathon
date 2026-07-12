@@ -541,6 +541,8 @@ export const normalizeLicenseAllocation = (alloc: any): LicenseAllocation => {
     assetId: String(alloc.assetId),
     parentAssetId: alloc.parentAssetId ? Number(alloc.parentAssetId) : null,
     targetUnitId: alloc.targetUnitId ? String(alloc.targetUnitId) : null,
+    assetCode: alloc.assetCode || alloc.asset?.assetCode || "",
+    assetName: alloc.assetName || alloc.asset?.assetName || "",
     status,
   };
 };
@@ -1004,7 +1006,7 @@ export const dataService = {
 
   async getUsers(): Promise<User[]> {
     const result = await apiClient.get("/users");
-    const rawList = Array.isArray(result) ? result : (result?.users || result?.data || []);
+    const rawList = Array.isArray(result) ? result : (result?.users || result?.data?.users || result?.data || []);
     return (Array.isArray(rawList) ? rawList : []).map(normalizeUser);
   },
 

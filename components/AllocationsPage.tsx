@@ -297,7 +297,9 @@ function DesktopAssetRow({
   const nonDisposedChildUnits = childUnits.filter(
     (u) => u.status !== ASSET_STATUS.DISPOSED,
   );
-  const allocatedChildCount = asset.allocatedQuantity || 0;
+  const allocatedChildCount = isBulkParent && childUnits.length > 0 
+    ? childUnits.reduce((acc, curr) => acc + (curr.allocatedQuantity || 0), 0)
+    : asset.allocatedQuantity || 0;
   const totalChildCount = nonDisposedChildUnits.length || asset.totalQuantity || 0;
 
   return (
@@ -804,36 +806,48 @@ export function AllocationsPage({
     };
 
     for (const asset of filteredAssets) {
-      const units = getCountableUnits(asset);
-      for (const unit of units) {
-        if (unit.status === ASSET_STATUS.AVAILABLE) {
+      if (asset.isBulkOrder) {
+        const allocated = asset.allocatedQuantity || 0;
+        const total = asset.totalQuantity || 0;
+
+        counts.allocated += allocated;
+
+        if (asset.status === ASSET_STATUS.UNDER_MAINTENANCE) {
+          counts.underMaintenance += total;
+        } else if (asset.status === ASSET_STATUS.DISPOSED) {
+          counts.disposed += total;
+        } else {
+          counts.available += Math.max(0, total - allocated);
+        }
+      } else {
+        if (asset.status === ASSET_STATUS.AVAILABLE) {
           counts.available += 1;
         } else if (
-          unit.status === ASSET_STATUS.ALLOCATED ||
-          unit.status === ASSET_STATUS.PARTIALLY_ALLOCATED
+          asset.status === ASSET_STATUS.ALLOCATED ||
+          asset.status === ASSET_STATUS.PARTIALLY_ALLOCATED
         ) {
           counts.allocated += 1;
-        } else if (unit.status === ASSET_STATUS.UNDER_MAINTENANCE) {
+        } else if (asset.status === ASSET_STATUS.UNDER_MAINTENANCE) {
           counts.underMaintenance += 1;
-        } else if (unit.status === ASSET_STATUS.DISPOSED) {
+        } else if (asset.status === ASSET_STATUS.DISPOSED) {
           counts.disposed += 1;
         }
       }
     }
 
     return counts;
-  }, [filteredAssets, getCountableUnits]);
+  }, [filteredAssets]);
 
   const availableCount = shownStatusCounts.available;
   const allocatedCount = shownStatusCounts.allocated;
   const underMaintenanceCount = shownStatusCounts.underMaintenance;
   const disposedCount = shownStatusCounts.disposed;
 
-  // Total unit count across all filtered rows (expanding bulk parents to their children)
+  // Total unit count across all filtered rows (expanding bulk parents to their quantities)
   const totalUnitCount = useMemo(
     () =>
-      filteredAssets.reduce((sum, a) => sum + getCountableUnits(a).length, 0),
-    [filteredAssets, getCountableUnits],
+      filteredAssets.reduce((sum, a) => sum + (a.isBulkOrder ? (a.totalQuantity || 0) : 1), 0),
+    [filteredAssets],
   );
 
   // ── Asset picker options (Available + Partially Allocated, excluding expired licenses) ──
@@ -1332,7 +1346,9 @@ export function AllocationsPage({
                     !a.isBulkOrder,
                 )
                 : [];
-              const allocatedChildCount = asset.allocatedQuantity || 0;
+              const allocatedChildCount = isBulkParent && childUnits.length > 0 
+                ? childUnits.reduce((acc, curr) => acc + (curr.allocatedQuantity || 0), 0)
+                : asset.allocatedQuantity || 0;
 
               return (
                 <div

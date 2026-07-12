@@ -571,6 +571,21 @@ export async function allocateAsset(
     },
   });
 
+  if (data.employeeId) {
+    try {
+      const { notifyUser } = await import("@/lib/services/notificationService");
+      await notifyUser(
+        data.employeeId,
+        "New Asset Allocated",
+        `Asset "${asset.assetName}" (${asset.assetCode}) has been allocated to you by ${performedByName}.`,
+        "ALLOCATION",
+        { assetId: data.assetId }
+      );
+    } catch (err) {
+      console.error("[allocateAsset] Failed to send allocation notification:", err);
+    }
+  }
+
   return allocation;
 }
 
@@ -643,6 +658,23 @@ export async function returnAsset(
   await auditAsset("RETURN", data.assetId, performedBy, {
     newValues: { status: newStatus, conditionAtReturn: data.conditionAtReturn },
   });
+
+  if (allocation.employeeId) {
+    try {
+      const { notifyUser } = await import("@/lib/services/notificationService");
+      await notifyUser(
+        allocation.employeeId,
+        "Asset Returned",
+        `Asset "${asset.assetName}" (${asset.assetCode}) has been successfully returned.`,
+        "ALLOCATION",
+        { assetId: data.assetId }
+      );
+    } catch (err) {
+      console.error("[returnAsset] Failed to send return notification:", err);
+    }
+  }
+
+  return;
 }
 
 // =============================================

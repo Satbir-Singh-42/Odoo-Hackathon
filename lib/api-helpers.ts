@@ -61,6 +61,9 @@ export function serverError(error: unknown): NextResponse {
 // AUTH + PERMISSION GUARD
 // =============================================
 
+import { headers } from "next/headers";
+import { resolvePermissions, USER_ROLES } from "@/lib/permissions";
+
 type AuthedSession = {
   user: {
     id: string;
@@ -89,16 +92,33 @@ export async function requireAuth(
     return unauthorized("Account suspended. Access denied.");
   }
 
+  const reqHeaders = await headers();
+  const isViewerMode = reqHeaders.get("x-viewer-mode") === "true";
+
+  let permissions = session.user.permissions;
+  let role = session.user.role;
+
+  if (isViewerMode) {
+    role = USER_ROLES.VIEWER;
+    permissions = resolvePermissions(USER_ROLES.VIEWER);
+  }
+
   if (
     requiredPermission &&
-    !hasPermission(session.user.permissions, requiredPermission)
+    !hasPermission(permissions, requiredPermission)
   ) {
     return forbidden(
-      `Access denied. Required permission: ${requiredPermission}. Your role: ${session.user.role}`
+      `Access denied. Required permission: ${requiredPermission}. Your role: ${role}`
     );
   }
 
-  return { session: session as unknown as AuthedSession };
+  const userOverride = {
+    ...session.user,
+    role,
+    permissions,
+  };
+
+  return { session: { ...session, user: userOverride } as unknown as AuthedSession };
 }
 
 /**
