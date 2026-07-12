@@ -338,7 +338,7 @@ export function ResetPassword() {
         </div>
 
         <div className="text-center mt-6 text-xs text-gray-500">
-          © 2026 {process.env.NEXT_PUBLIC_WEBSITE_NAME || (import.meta as any).env?.VITE_WEBSITE_NAME || "Inventory Management System"}. All rights reserved.
+          © 2026 {process.env.NEXT_PUBLIC_WEBSITE_NAME || "Inventory Management System"}. All rights reserved.
         </div>
       </div>
     </div>

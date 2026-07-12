@@ -63,7 +63,7 @@ function SignInContent() {
             <img src="/android-chrome-192x192.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 px-2">
-            {process.env.NEXT_PUBLIC_WEBSITE_NAME || (import.meta as any).env?.VITE_WEBSITE_NAME || "Inventory Management"}
+            {process.env.NEXT_PUBLIC_WEBSITE_NAME || "Inventory Management"}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 px-2">
             Asset & Maintenance System
@@ -209,7 +209,7 @@ function SignInContent() {
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} {process.env.NEXT_PUBLIC_WEBSITE_NAME || (import.meta as any).env?.VITE_WEBSITE_NAME || "Inventory Management System"}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {process.env.NEXT_PUBLIC_WEBSITE_NAME || "Inventory Management System"}. All rights reserved.</p>
         </div>
       </div>
 

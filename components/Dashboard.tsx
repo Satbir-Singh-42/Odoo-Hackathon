@@ -461,7 +461,7 @@ export function Dashboard({
           Dashboard
         </h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1">
-          Overview of your {(process.env.NEXT_PUBLIC_WEBSITE_NAME || (import.meta as any).env?.VITE_WEBSITE_NAME || "Inventory Management System").toLowerCase()}
+          Overview of your {(process.env.NEXT_PUBLIC_WEBSITE_NAME || "Inventory Management System").toLowerCase()}
         </p>
       </div>
 
