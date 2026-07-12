@@ -104,6 +104,7 @@ const PUBLIC_PATHS = [
   "/auth/sign-up",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/guide",
   "/auth/error",
   "/api/auth",     // All NextAuth endpoints
   "/api/health",   // Health check

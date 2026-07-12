@@ -70,6 +70,11 @@ const BookingsPage = lazy<React.ComponentType<any>>(() =>
 const AuditsPage = lazy<React.ComponentType<any>>(() =>
   import("@/components/AuditsPage").then((m) => ({ default: m.AuditsPage }))
 );
+
+const GuidePage = lazy<React.ComponentType<any>>(() =>
+  import("@/components/GuidePage").then((m) => ({ default: m.GuidePage }))
+);
+
 const DataViewPage = lazy<React.ComponentType<any>>(() => import("@/components/DataViewPage"));
 
 // Modals — lazily loaded so their code only ships when the user opens them
@@ -127,6 +132,7 @@ type View =
   | "maintenance"
   | "reports"
   | "settings"
+  | "guide"
   | "bookings"
   | "audits";
 
@@ -140,6 +146,7 @@ const viewToPath: Record<View, string> = {
   settings: "/settings",
   bookings: "/bookings",
   audits: "/audits",
+  guide: "/guide",
 };
 
 const getViewFromPath = (): View => {
@@ -153,6 +160,7 @@ const getViewFromPath = (): View => {
   if (path.startsWith("/setting") || path.startsWith("/notification")) return "settings";
   if (path.startsWith("/booking")) return "bookings";
   if (path.startsWith("/audit")) return "audits";
+  if (path.startsWith("/guide")) return "guide";   // ← add this line
 
   return "dashboard";
 };
@@ -166,6 +174,7 @@ const navItems = [
   { id: "bookings" as View, label: "Bookings" },
   { id: "audits" as View, label: "Audits" },
   { id: "reports" as View, label: "Reports" },
+  { id: "guide" as View, label: "Guide" },   // ← add this
 ];
 
 const settingsNavItem = {
@@ -299,7 +308,7 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
   const [isAnomalyOverlayOpen, setIsAnomalyOverlayOpen] = useState(false);
   const [forceViewerModeForDetail, setForceViewerModeForDetail] = useState(false);
   const [notificationControl, setNotificationControl] =
-  useState<NotificationControlSettings | null>(null);
+    useState<NotificationControlSettings | null>(null);
   const [anomalyActionIds, setAnomalyActionIds] = useState<Set<number>>(
     new Set(),
   );
@@ -596,7 +605,7 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
     dataService.setViewerMode(isViewerViewEnabled);
     if (isAuthenticated) {
       if (prevViewerViewEnabledRef.current !== isViewerViewEnabled) {
-        refreshAllocationData(false, "all").catch(() => {});
+        refreshAllocationData(false, "all").catch(() => { });
       }
     }
     prevViewerViewEnabledRef.current = isViewerViewEnabled;
@@ -2819,7 +2828,7 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
       return true;
     });
     const allItems = isAdmin
-      ? [...roleBasedItems, settingsNavItem]
+      ? [...roleBasedItems, settingsNavItem, { id: "guide" as View, label: "Guide" }]
       : roleBasedItems;
 
     return allItems.map((item) => (
@@ -3145,6 +3154,9 @@ export default function AppContainer({ initialView, serverData }: AppContainerPr
               users={users}
               userRole={currentRole}
             />
+            {currentView === "guide" && (
+            <GuidePage />
+          )}
           )}
         </Suspense>
       </main>
