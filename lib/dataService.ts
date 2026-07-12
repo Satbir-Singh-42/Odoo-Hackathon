@@ -473,17 +473,43 @@ const apiClient = {
 // Helper to normalize backend data to frontend types
 const normalizeAsset = (asset: any): Asset => {
   if (!asset) return asset;
+
+  // The API may return assetType as a nested { categoryName, typeName } object
+  // (from Prisma include). Flatten it into the flat fields the frontend expects.
+  const nestedType = asset.assetType && typeof asset.assetType === "object"
+    ? asset.assetType as { categoryName?: string; typeName?: string }
+    : null;
+
+  // Vendor may be nested { vendorName } from Prisma include
+  const nestedVendor = asset.vendor && typeof asset.vendor === "object"
+    ? asset.vendor as { vendorName?: string }
+    : null;
+
+  // Active allocation may be nested from Prisma include (allocations array)
+  const activeAlloc = Array.isArray(asset.allocations) ? asset.allocations[0] : null;
+  const allocEmployee = activeAlloc?.employee;
+
   return {
     ...asset,
     id: String(asset.id),
+    // Flatten assetType relation → flat string fields
+    category: nestedType?.categoryName ?? asset.category ?? "",
+    assetType: nestedType?.typeName ?? (typeof asset.assetType === "string" ? asset.assetType : ""),
+    // Flatten vendor relation → vendorName string
+    vendorName: nestedVendor?.vendorName ?? asset.vendorName ?? "",
+    // Flatten allocation relation → employeeId / userName / installationLocation
+    employeeId: activeAlloc?.employeeId
+      ? String(activeAlloc.employeeId)
+      : (asset.employeeId ? String(asset.employeeId) : null),
+    userName: allocEmployee?.fullName ?? asset.userName ?? null,
+    installationLocation: activeAlloc?.installationLocation ?? asset.installationLocation ?? null,
+    // Existing normalisations
     vendorId: asset.vendorId ? String(asset.vendorId) : asset.vendorId,
-    employeeId: asset.employeeId ? String(asset.employeeId) : null,
     parentAssetId: asset.parentAssetId ? Number(asset.parentAssetId) : null,
-    bulkOrderParentId: asset.bulkOrderParentId
-      ? String(asset.bulkOrderParentId)
-      : null,
+    bulkOrderParentId: asset.bulkOrderParentId ? String(asset.bulkOrderParentId) : null,
   };
 };
+
 
 const normalizeMaintenance = (record: any): MaintenanceRecord => {
   if (!record) return record;
@@ -757,7 +783,8 @@ export const dataService = {
     errors: string[];
   }> {
     const result = await apiClient.post("/assets/bulk-import", { assets });
-    return result.data;
+    // The bulk-import route returns the result directly (no .data wrapper)
+    return result;
   },
 
   async updateAsset(id: string, updates: Partial<Asset>): Promise<Asset> {

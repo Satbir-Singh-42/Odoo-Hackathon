@@ -74,7 +74,11 @@ export async function GET(req: NextRequest) {
       vendorId: sp.get("vendorId") ?? undefined,
       condition: sp.get("condition") ?? undefined,
       page: sp.get("page") ? parseInt(sp.get("page")!, 10) : 1,
-      pageSize: sp.get("pageSize") ? parseInt(sp.get("pageSize")!, 10) : 50,
+      // Accept both 'pageSize' (pagination UI) and 'limit' (full-load requests from dataService)
+      pageSize: Math.min(
+        10000,
+        parseInt(sp.get("pageSize") ?? sp.get("limit") ?? "50", 10) || 50
+      ),
       sortBy: sp.get("sortBy") ?? "updatedAt",
       sortOrder: (sp.get("sortOrder") as "asc" | "desc") ?? "desc",
       isDeleted: sp.get("deleted") === "true",

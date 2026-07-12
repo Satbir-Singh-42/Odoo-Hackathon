@@ -53,8 +53,11 @@ export const InAppNotificationBell: React.FC = () => {
       });
 
       if (maxSeenIdRef.current > 0 && shouldReload) {
-        // Automatically sync cache and display if role/categories changed
-        window.location.reload();
+        // Update maxSeenIdRef BEFORE reloading to prevent a reload loop
+        maxSeenIdRef.current = newMaxId;
+        // Dispatch a soft session refresh instead of a hard page reload
+        window.dispatchEvent(new CustomEvent("REFRESH_APP_DATA"));
+        return;
       }
 
       maxSeenIdRef.current = newMaxId;

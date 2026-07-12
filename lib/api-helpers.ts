@@ -49,7 +49,7 @@ export function conflict(message: string): NextResponse {
 }
 
 export function serverError(error: unknown): NextResponse {
-  console.error("[API Error]", error);
+  console.error("[API Error]", error instanceof Error ? error.stack || error.message : error);
   const message =
     process.env.NODE_ENV === "development"
       ? String(error instanceof Error ? error.message : error)

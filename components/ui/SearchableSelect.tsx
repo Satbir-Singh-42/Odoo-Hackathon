@@ -288,7 +288,7 @@ export function SearchableSelect({
         <>
           {filteredOptions.map((option, index) => (
             <div
-              key={option.value}
+              key={option.value ?? index}
               id={`option-${index}`}
               className={`px-3 sm:px-4 py-2 cursor-pointer transition-colors
                 ${option.value === value ? 'bg-blue-50 text-blue-700 font-normal' : ''}
