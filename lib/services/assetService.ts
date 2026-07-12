@@ -739,17 +739,28 @@ export async function bulkImportAssets(
   const errors: string[] = [];
 
   const assetTypes = await prisma.assetType.findMany();
-  const typeMap = new Map<string, number>();
+
+  // Build lookup maps: by typeName, by id, and by "category::typeName" for precision
+  const typeByName = new Map<string, number>();
+  const typeByCategoryAndName = new Map<string, number>();
   assetTypes.forEach(t => {
-    typeMap.set(t.typeName.toLowerCase(), t.id);
-    typeMap.set(String(t.id), t.id);
+    typeByName.set(t.typeName.toLowerCase(), t.id);
+    typeByName.set(String(t.id), t.id);
+    typeByCategoryAndName.set(
+      `${t.categoryName.toLowerCase()}::${t.typeName.toLowerCase()}`,
+      t.id
+    );
   });
 
   for (const row of assets) {
     try {
       const assetCode = String(row.assetCode || row["Asset Code"] || "").trim();
       const assetName = String(row.assetName || row["Asset Name"] || "").trim();
-      const typeInput = String(row.assetTypeId || row["Type"] || row["Asset Type"] || "").trim();
+      // Frontend sends { assetType, category } — also support legacy CSV column names
+      const typeInput = String(
+        row.assetType || row.assetTypeId || row["Type"] || row["Asset Type"] || ""
+      ).trim();
+      const categoryInput = String(row.category || row["Category"] || "").trim().toLowerCase();
 
       if (!assetCode || !assetName || !typeInput) {
         errors.push(`Missing Asset Code, Asset Name, or Type for row: ${assetCode || assetName || "unknown"}`);
@@ -757,8 +768,14 @@ export async function bulkImportAssets(
         continue;
       }
 
-      const assetTypeId = typeMap.get(typeInput.toLowerCase()) || Number(typeInput);
-      if (!assetTypeId || isNaN(assetTypeId)) {
+      // Prefer category+type combo for precision, fall back to type-only
+      const combinedKey = categoryInput ? `${categoryInput}::${typeInput.toLowerCase()}` : null;
+      const assetTypeId =
+        (combinedKey ? typeByCategoryAndName.get(combinedKey) : undefined) ??
+        typeByName.get(typeInput.toLowerCase()) ??
+        (isNaN(Number(typeInput)) ? undefined : Number(typeInput));
+
+      if (!assetTypeId) {
         errors.push(`Invalid Asset Type "${typeInput}" for asset "${assetCode}"`);
         skippedCount++;
         continue;
@@ -775,11 +792,25 @@ export async function bulkImportAssets(
         assetCode,
         assetName,
         assetTypeId,
-        vendorId: row.vendorId || row["Vendor Code"] || row["Vendor ID"] || undefined,
+        // Support camelCase (frontend) and legacy column names (CSV)
+        vendorId: row.vendorCode || row.vendorId || row["Vendor Code"] || row["Vendor ID"] || undefined,
         serialNumber: row.serialNumber || row["Serial Number"] || undefined,
         model: row.model || row["Model"] || undefined,
-        purchasePrice: Number(row.purchasePrice || row["Purchase Price"] || 0),
+        purchasePrice: (row.purchasePrice || row["Purchase Price"]) ? Number(row.purchasePrice ?? row["Purchase Price"]) : undefined,
+        purchaseNumber: row.purchaseNumber || row["Purchase Number"] || undefined,
+        prNumber: row.prNumber || row["PR Number"] || undefined,
+        invoiceNumber: row.invoiceNumber || row["Invoice Number"] || undefined,
+        invoiceDate: row.invoiceDate || row["Invoice Date"] || undefined,
         totalQuantity: Number(row.totalQuantity || row["Quantity"] || 1),
+        ram: row.ram || row["RAM"] || undefined,
+        storage: row.storage || row["Storage"] || undefined,
+        processor: row.processor || row["Processor"] || undefined,
+        macAddress: row.macAddress || row["MAC Address"] || undefined,
+        portCount: (row.portCount || row["Port Count"]) ? Number(row.portCount ?? row["Port Count"]) : undefined,
+        portSpeed: row.portSpeed || row["Port Speed"] || undefined,
+        licenseType: row.licenseType || row["License Type"] || undefined,
+        licenseExpiryDate: row.licenseExpiryDate || row["License Expiry Date"] || undefined,
+        condition: row.condition || row["Condition"] || undefined,
       } as CreateAssetData, performedBy);
       createdCount++;
     } catch (err: any) {
