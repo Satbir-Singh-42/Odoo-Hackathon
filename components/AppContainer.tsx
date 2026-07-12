@@ -173,9 +173,18 @@ const ANOMALY_POLL_INTERVAL_MS = 60000; // 60s — balanced for 100+ users
 
 export interface AppContainerProps {
   initialView?: View;
+  serverData?: {
+    assets?: Asset[];
+    maintenanceRecords?: MaintenanceRecord[];
+    licenseAllocations?: LicenseAllocation[];
+    users?: User[];
+    categories?: Category[];
+    vendors?: Vendor[];
+    assetHistory?: AssetHistoryType[];
+  };
 }
 
-export default function AppContainer({ initialView }: AppContainerProps = {}) {
+export default function AppContainer({ initialView, serverData }: AppContainerProps = {}) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -246,18 +255,18 @@ export default function AppContainer({ initialView }: AppContainerProps = {}) {
     }
   }, [pathname, initialView]);
 
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<Asset[]>(serverData?.assets || []);
   const [maintenanceRecords, setMaintenanceRecords] = useState<
     MaintenanceRecord[]
-  >([]);
+  >(serverData?.maintenanceRecords || []);
   const [licenseAllocations, setLicenseAllocations] = useState<
     LicenseAllocation[]
-  >([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [assetHistory, setAssetHistory] = useState<AssetHistoryType[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  >(serverData?.licenseAllocations || []);
+  const [users, setUsers] = useState<User[]>(serverData?.users || []);
+  const [vendors, setVendors] = useState<Vendor[]>(serverData?.vendors || []);
+  const [assetHistory, setAssetHistory] = useState<AssetHistoryType[]>(serverData?.assetHistory || []);
+  const [categories, setCategories] = useState<Category[]>(serverData?.categories || []);
+  const [loading, setLoading] = useState(!serverData);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showAssetDetail, setShowAssetDetail] = useState(false);
@@ -331,6 +340,7 @@ export default function AppContainer({ initialView }: AppContainerProps = {}) {
   // Load data only when authenticated
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (serverData) return; // Skip client-side fetch if serverData is provided
 
     const initData = async () => {
       try {

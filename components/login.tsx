@@ -18,7 +18,7 @@ export function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(
-    () => new URLSearchParams(window.location.search).get("showForgot") === "1",
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("showForgot") === "1",
   );
 
   // Show success toast if redirected back after a reset

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
           isBulkOrder: false,
           bulkOrderParentId: parentAsset.id,
           bulkOrderIndex: unitIndex,
-          status: "Available",
+          status: "Available" as any,
           condition: parentAsset.condition,
           invoiceNumber: parentAsset.invoiceNumber,
           invoiceDate: parentAsset.invoiceDate,

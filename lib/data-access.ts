@@ -1,0 +1,116 @@
+import "server-only";
+import { prisma } from "@/lib/prisma";
+
+export async function getAssetsData(params: { managedCategories?: string[] } = {}) {
+  const where: any = { isDeleted: false };
+  if (params.managedCategories && !params.managedCategories.includes("ALL")) {
+    where.assetType = { categoryName: { in: params.managedCategories } };
+  }
+  
+  const assets = await prisma.asset.findMany({
+    where,
+    include: {
+      assetType: { select: { categoryName: true, typeName: true } },
+      vendor: { select: { vendorName: true } },
+      allocations: {
+        where: { status: "ACTIVE", isDeleted: false },
+        take: 1,
+        include: {
+          employee: { select: { fullName: true, department: true } },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 10000,
+  });
+  
+  // Serialize dates to strings for Next.js Server Components passing to Client Components
+  return JSON.parse(JSON.stringify(assets));
+}
+
+export async function getMaintenanceData() {
+  const maintenance = await prisma.maintenance.findMany({
+    where: { isDeleted: false },
+    include: {
+      asset: {
+        select: {
+          assetCode: true,
+          assetName: true,
+          assetType: { select: { categoryName: true, typeName: true } },
+        },
+      },
+      reporter: { select: { fullName: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  return JSON.parse(JSON.stringify(maintenance));
+}
+
+export async function getLicenseAllocationsData() {
+  const allocations = await prisma.allocation.findMany({
+    where: { isDeleted: false, status: "ACTIVE" },
+    include: {
+      asset: { select: { assetCode: true, assetName: true } },
+      employee: { select: { fullName: true, department: true } },
+    },
+    orderBy: { allocationDate: "desc" },
+  });
+  return JSON.parse(JSON.stringify(allocations));
+}
+
+export async function getUsersData() {
+  const users = await prisma.user.findMany({
+    where: { isDeleted: false, isBlocked: false },
+    select: { id: true, fullName: true, department: true, email: true, role: true },
+  });
+  return JSON.parse(JSON.stringify(users));
+}
+
+export async function getCategoriesData() {
+  const categories = await prisma.assetType.findMany({
+    select: { id: true, categoryName: true, typeName: true },
+  });
+  return JSON.parse(JSON.stringify(categories));
+}
+
+export async function getVendorsData() {
+  const vendors = await prisma.vendor.findMany({
+    where: { isDeleted: false, isBlocked: false },
+    select: { id: true, vendorName: true },
+  });
+  return JSON.parse(JSON.stringify(vendors));
+}
+
+export async function getAssetHistoryData() {
+  const history = await prisma.assetHistory.findMany({
+    orderBy: { actionDate: "desc" },
+    take: 50,
+    include: {
+      employee: { select: { fullName: true, department: true } },
+      parentAsset: { select: { assetCode: true, assetName: true } },
+    },
+  });
+  return JSON.parse(JSON.stringify(history));
+}
+
+export async function getAppContainerData(session?: any) {
+  const managedCategories = session?.user?.managedCategories ? session.user.managedCategories.split(',') : ['ALL'];
+  const [
+    assets,
+    maintenanceRecords,
+    licenseAllocations,
+    users,
+    categories,
+    vendors,
+    assetHistory
+  ] = await Promise.all([
+    getAssetsData({ managedCategories }),
+    getMaintenanceData(),
+    getLicenseAllocationsData(),
+    getUsersData(),
+    getCategoriesData(),
+    getVendorsData(),
+    getAssetHistoryData()
+  ]);
+  return { assets, maintenanceRecords, licenseAllocations, users, categories, vendors, assetHistory };
+}
