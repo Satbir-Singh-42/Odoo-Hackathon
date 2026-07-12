@@ -9,7 +9,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcryptjs";
+import { verifyAndMigratePassword } from "@/lib/services/authService";
 import { prisma } from "@/lib/prisma";
 import { resolvePermissions } from "@/lib/permissions";
 
@@ -63,9 +63,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user || !user.password) return null;
         if (user.isBlocked || user.isDeleted) return null;
 
-        const passwordValid = await compare(
+        // verifyAndMigratePassword handles bcrypt, legacy plaintext, and
+        // silent work-factor upgrades (rounds < 10 → 10) on success.
+        const passwordValid = await verifyAndMigratePassword(
           credentials.password as string,
-          user.password
+          user.password,
+          user.id,
         );
         if (!passwordValid) return null;
 

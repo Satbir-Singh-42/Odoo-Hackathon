@@ -107,6 +107,215 @@ export async function deleteInAppNotification(
   });
 }
 
+export async function notifyTechnician(userName: string, options: { title: string; message: string; type: string; linkPath?: string; assetId?: number }) {
+  if (!userName) return;
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [{ fullName: userName }, { id: userName }],
+        isDeleted: false,
+      }
+    });
+    
+    for (const u of users) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const existing = await prisma.inAppNotification.findFirst({
+        where: {
+          employeeId: u.id,
+          title: options.title,
+          type: options.type,
+          isDeleted: false,
+          createdAt: { gte: startOfDay }
+        }
+      });
+      if (!existing) {
+        await createInAppNotification({
+          employeeId: u.id,
+          title: options.title,
+          message: options.message,
+          type: options.type,
+          linkPath: options.linkPath,
+          assetId: options.assetId
+        });
+      }
+    }
+  } catch (err) { console.error("[InAppNotifier] notifyTechnician error:", err); }
+}
+
+export async function notifyAllAdmins(options: { title: string; message: string; type: string; linkPath?: string; assetId?: number }) {
+  try {
+    const admins = await prisma.user.findMany({ where: { role: 'Admin', isDeleted: false } });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    for (const a of admins) {
+      const existing = await prisma.inAppNotification.findFirst({
+        where: {
+          employeeId: a.id,
+          title: options.title,
+          type: options.type,
+          isDeleted: false,
+          createdAt: { gte: startOfDay }
+        }
+      });
+      if (!existing) {
+        await createInAppNotification({
+          employeeId: a.id,
+          title: options.title,
+          message: options.message,
+          type: options.type,
+          linkPath: options.linkPath,
+          assetId: options.assetId
+        });
+      }
+    }
+  } catch (err) { console.error("[InAppNotifier] notifyAllAdmins error:", err); }
+}
+
+export async function notifyManagersOrAdminsFallback(options: {
+  title: string;
+  message: string;
+  type: string;
+  linkPath?: string;
+  assetId?: number;
+  actorEmployeeId?: string | null;
+  excludeAdmins?: boolean;
+}) {
+  try {
+    let recipients: string[] = [];
+    let fellBackToAdmin = false;
+    let actorRole: string | null = null;
+    
+    if (options.actorEmployeeId) {
+      const actor = await prisma.user.findFirst({
+        where: { id: options.actorEmployeeId, isDeleted: false }
+      });
+      actorRole = actor ? actor.role.toLowerCase() : null;
+    }
+
+    let categoryName: string | null = null;
+    if (options.assetId) {
+      const asset = await prisma.asset.findUnique({
+        where: { id: options.assetId },
+        include: { assetType: true }
+      });
+      categoryName = asset?.assetType?.categoryName || null;
+    }
+
+    const filterByCategory = (managedCategories?: string | null) => {
+      if (!categoryName) return true;
+      if (!managedCategories || managedCategories === 'ALL') return true;
+      const categories = managedCategories.split(',').map(c => c.trim());
+      return categories.includes('ALL') || categories.includes(categoryName);
+    };
+
+    if (actorRole === 'manager') {
+      if (options.excludeAdmins) {
+        recipients = [];
+      } else {
+        fellBackToAdmin = true;
+        const admins = await prisma.user.findMany({ where: { role: 'Admin', isDeleted: false } });
+        recipients = admins
+          .filter(a => filterByCategory(a.managedCategories))
+          .map(a => a.id)
+          .filter(id => id !== options.actorEmployeeId);
+      }
+    } else if (actorRole === 'admin') {
+      recipients = [];
+    } else {
+      const managers = await prisma.user.findMany({ where: { role: 'Manager', isDeleted: false } });
+      recipients = managers
+        .filter(m => filterByCategory(m.managedCategories))
+        .map(m => m.id);
+        
+      if (recipients.length === 0 && !options.excludeAdmins) {
+        fellBackToAdmin = true;
+        const admins = await prisma.user.findMany({ where: { role: 'Admin', isDeleted: false } });
+        recipients = admins
+          .filter(a => filterByCategory(a.managedCategories))
+          .map(a => a.id);
+      }
+    }
+
+    if (recipients.length === 0) return { recipients: [], fellBackToAdmin: false };
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    for (const employeeId of recipients) {
+      const existing = await prisma.inAppNotification.findFirst({
+        where: {
+          employeeId,
+          title: options.title,
+          type: options.type,
+          isDeleted: false,
+          createdAt: { gte: startOfDay }
+        }
+      });
+      if (!existing) {
+        await createInAppNotification({
+          employeeId,
+          title: options.title,
+          message: options.message,
+          type: options.type,
+          linkPath: options.linkPath,
+          assetId: options.assetId
+        });
+      }
+    }
+    
+    return { recipients, fellBackToAdmin };
+  } catch (err) {
+    console.error("[InAppNotifier] notifyManagersOrAdminsFallback error:", err);
+    return { recipients: [], fellBackToAdmin: false };
+  }
+}
+
+export async function notifyAllocatedUsers(assetIds: number[], options: { title: string; message: string; type: string; linkPath?: string }) {
+  if (!Array.isArray(assetIds) || assetIds.length === 0) return;
+  try {
+    const allocations = await prisma.allocation.findMany({
+      where: {
+        assetId: { in: assetIds },
+        status: 'ACTIVE',
+        isDeleted: false
+      },
+      select: { employeeId: true },
+      distinct: ['employeeId']
+    });
+    
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    for (const alloc of allocations) {
+      if (!alloc.employeeId) continue;
+      
+      const existing = await prisma.inAppNotification.findFirst({
+        where: {
+          employeeId: alloc.employeeId,
+          title: options.title,
+          type: options.type,
+          isDeleted: false,
+          createdAt: { gte: startOfDay }
+        }
+      });
+      if (!existing) {
+        await createInAppNotification({
+          employeeId: alloc.employeeId,
+          title: options.title,
+          message: options.message,
+          type: options.type,
+          linkPath: options.linkPath
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[InAppNotifier] notifyAllocatedUsers error:", err);
+  }
+}
+
 // =============================================
 // EMAIL NOTIFICATION QUEUE
 // =============================================
@@ -125,7 +334,136 @@ export interface QueueEmailData {
   scheduledFor?: Date;
 }
 
+export function isWithinActiveTimeWindow(settings: Record<string, string>): boolean {
+  if (settings.enableActiveTimeWindow !== "true") return true;
+  const startStr = settings.activeTimeStart || "08:00";
+  const endStr = settings.activeTimeEnd || "18:00";
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const [startH, startM] = startStr.split(":").map(Number);
+  const [endH, endM] = endStr.split(":").map(Number);
+  
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+
+  if (startMinutes <= endMinutes) {
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  } else {
+    // Overnight window (e.g. 22:00 to 06:00)
+    return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+  }
+}
+
 export async function queueEmail(data: QueueEmailData) {
+  const metadataStr = data.metadata ? JSON.stringify(data.metadata) : null;
+  const scheduledAt = data.scheduledFor ?? new Date();
+  const type = data.type;
+
+  try {
+    const auditEntries = data.metadata?.auditEntries as any[] | undefined;
+    // Deduping for anomalies
+    if (type.startsWith("ANOMALY") && auditEntries?.[0]) {
+      const recordId = String(auditEntries[0].recordId);
+      if (recordId && recordId !== "undefined") {
+        const pendingItems = await prisma.notificationQueue.findMany({
+          where: { status: "PENDING", type },
+          orderBy: { createdAt: "desc" }
+        });
+        
+        for (const item of pendingItems) {
+          try {
+            const meta = item.metadata ? JSON.parse(item.metadata) : {};
+            if (String(meta.auditEntries?.[0]?.recordId) === recordId) {
+              return await prisma.notificationQueue.update({
+                where: { id: item.id },
+                data: {
+                  recipient: data.recipient,
+                  subject: data.subject,
+                  body: data.body,
+                  cc: data.cc,
+                  metadata: metadataStr,
+                  scheduledFor: scheduledAt,
+                  createdAt: new Date(),
+                  errorMessage: null,
+                  retryCount: 0,
+                  maintenanceId: data.maintenanceId,
+                  maintenanceEmailType: data.maintenanceEmailType,
+                  recipientType: data.recipientType,
+                  recipientLabel: data.recipientLabel
+                }
+              });
+            }
+          } catch(e) {}
+        }
+      }
+    } 
+    // Deduping for maintenance
+    else if (type.startsWith("MAINTENANCE_") && data.metadata?.emailType) {
+      const existing = await prisma.notificationQueue.findFirst({
+        where: { status: "PENDING", type, recipient: data.recipient },
+        orderBy: { createdAt: "desc" }
+      });
+      if (existing) {
+        return await prisma.notificationQueue.update({
+          where: { id: existing.id },
+          data: {
+            subject: data.subject,
+            body: data.body,
+            cc: data.cc,
+            metadata: metadataStr,
+            scheduledFor: scheduledAt,
+            createdAt: new Date(),
+            errorMessage: null,
+            retryCount: 0,
+            maintenanceId: data.maintenanceId,
+            maintenanceEmailType: data.maintenanceEmailType,
+            recipientType: data.recipientType,
+            recipientLabel: data.recipientLabel
+          }
+        });
+      }
+    }
+    // Deduping for license expiry
+    else if (type === "LICENSE_EXPIRY" && data.metadata) {
+      const emailCategory = data.metadata.emailCategory || auditEntries?.[0]?.newValues?.category || null;
+      if (emailCategory) {
+        const pendingItems = await prisma.notificationQueue.findMany({
+          where: { status: "PENDING", type, recipient: data.recipient },
+          orderBy: { createdAt: "desc" }
+        });
+        for (const item of pendingItems) {
+          try {
+            const meta = item.metadata ? JSON.parse(item.metadata) : {};
+            const itemCat = meta.emailCategory || meta.auditEntries?.[0]?.newValues?.category || null;
+            if (itemCat === emailCategory) {
+              return await prisma.notificationQueue.update({
+                where: { id: item.id },
+                data: {
+                  subject: data.subject,
+                  body: data.body,
+                  cc: data.cc,
+                  metadata: metadataStr,
+                  scheduledFor: scheduledAt,
+                  createdAt: new Date(),
+                  errorMessage: null,
+                  retryCount: 0,
+                  maintenanceId: data.maintenanceId,
+                  maintenanceEmailType: data.maintenanceEmailType,
+                  recipientType: data.recipientType,
+                  recipientLabel: data.recipientLabel
+                }
+              });
+            }
+          } catch(e) {}
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[NotificationQueue] Deduplication check failed, falling back to insert:", err);
+  }
+
   return prisma.notificationQueue.create({
     data: {
       recipient: data.recipient,
@@ -133,14 +471,118 @@ export async function queueEmail(data: QueueEmailData) {
       body: data.body,
       type: data.type,
       cc: data.cc,
-      metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+      metadata: metadataStr,
       maintenanceId: data.maintenanceId,
       maintenanceEmailType: data.maintenanceEmailType,
       recipientType: data.recipientType,
       recipientLabel: data.recipientLabel,
-      scheduledFor: data.scheduledFor ?? new Date(),
+      scheduledFor: scheduledAt,
       status: "PENDING",
     },
+  });
+}
+
+export async function cancelPendingSimilarAnomalies(anomalyType: string, recordId: string | number, changedBy = "System") {
+  if (!anomalyType || !recordId) return { cancelledCount: 0 };
+
+  const normalizedType = String(anomalyType || "").toUpperCase().replace(/[^A-Z0-9_]/g, "");
+  const queueType = normalizedType ? `ANOMALY_${normalizedType}` : "ANOMALY";
+
+  const pendingItems = await prisma.notificationQueue.findMany({
+    where: { status: "PENDING", type: queueType }
+  });
+
+  let cancelledCount = 0;
+  for (const row of pendingItems) {
+    try {
+      const meta = row.metadata ? JSON.parse(row.metadata) : {};
+      if (String(meta.auditEntries?.[0]?.recordId) === String(recordId)) {
+        meta.mergedBy = changedBy;
+        meta.mergedAt = new Date().toISOString();
+
+        await prisma.notificationQueue.update({
+          where: { id: row.id },
+          data: {
+            status: "SUPPRESSED",
+            metadata: JSON.stringify(meta)
+          }
+        });
+        cancelledCount++;
+      }
+    } catch (e) {}
+  }
+  return { cancelledCount };
+}
+
+export async function getPendingAnomalyApprovals(limit = 50, userRole = "Admin", userCategories: string[] = []) {
+  const isGlobalAccess = userRole === "Admin" || userCategories.includes("ALL");
+
+  const pendingItems = await prisma.notificationQueue.findMany({
+    where: {
+      status: "PENDING",
+      type: { startsWith: "ANOMALY" }
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit
+  });
+
+  let filteredRows = pendingItems;
+
+  if (!isGlobalAccess) {
+    if (userCategories.length === 0) return [];
+    
+    filteredRows = [];
+    for (const row of pendingItems) {
+      const metadata = row.metadata ? JSON.parse(row.metadata) : {};
+      const anomalyType = String(metadata.anomalyType || "").toUpperCase();
+      let categoryName: string | null = null;
+      
+      if (anomalyType === "HOARDER" || anomalyType === "SOFTWARE_DUPLICATE") {
+         const typeName = metadata.payload?.assetType || metadata.payload?.softwareType || metadata.auditEntries?.[0]?.newValues?.assetType;
+         if (typeName) {
+           const typeRes = await prisma.assetType.findFirst({ where: { typeName } });
+           categoryName = typeRes?.categoryName || null;
+         }
+      } else {
+         const recordId = metadata.auditEntries?.[0]?.recordId;
+         if (recordId && /^\\d+$/.test(String(recordId))) {
+           const asset = await prisma.asset.findUnique({
+             where: { id: Number(recordId) },
+             include: { assetType: true }
+           });
+           categoryName = asset?.assetType?.categoryName || null;
+         }
+      }
+      
+      if (categoryName && userCategories.includes(categoryName)) {
+         filteredRows.push(row);
+      }
+    }
+  }
+
+  return filteredRows.map((row) => {
+    const metadata = row.metadata ? JSON.parse(row.metadata) : {};
+    const anomalyType = metadata.anomalyType || null;
+
+    const typeLabel = (() => {
+      const t = String(anomalyType || "").toUpperCase();
+      if (t === "HOARDER") return "Allocation Anomaly (Hoarder)";
+      if (t === "LEMON") return "Maintenance Anomaly (Lemon Hardware)";
+      if (t === "SOFTWARE_DUPLICATE") return "Software Duplicate Alert";
+      if (t === "GHOST_ASSET") return "Ghost Asset Alert";
+      return "Anomaly Alert";
+    })();
+
+    return {
+      id: row.id,
+      anomalyType,
+      title: metadata.toastTitle || typeLabel,
+      message: metadata.toastMessage || null,
+      payload: metadata.payload || null,
+      createdAt: row.createdAt,
+      scheduledFor: row.scheduledFor,
+      allocatedBy: metadata.allocatedBy || null,
+    };
   });
 }
 

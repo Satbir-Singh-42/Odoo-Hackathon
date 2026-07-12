@@ -11,39 +11,51 @@ import {
   serverError,
 } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
-import nodemailer from "nodemailer";
+import { sendEmail, buildEmailHtml } from "@/lib/email";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const authResult = await requireAuth(PERMISSIONS.AUDIT_VIEW);
   if (isAuthError(authResult)) return authResult;
+  const { session } = authResult;
 
   try {
     const body = await req.json();
-    const { host, port, user, pass } = body as {
+    const { host, port, user, pass, to } = body as {
       host?: string;
       port?: string;
       user?: string;
       pass?: string;
+      to?: string;
     };
 
     if (!host || !port) {
       return badRequest("host and port are required.");
     }
 
-    const transporter = nodemailer.createTransport({
-      host,
-      port: parseInt(port, 10),
-      secure: parseInt(port, 10) === 465,
-      auth: user && pass ? { user, pass } : undefined,
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
+    const recipient = to || user || session.user.employeeId;
+    if (!recipient || !recipient.includes("@")) {
+      return badRequest("A valid recipient email address (to or user) is required.");
+    }
+
+    await sendEmail({
+      to: recipient,
+      subject: "[AssetFlow] SMTP Test – Connection Successful",
+      html: buildEmailHtml({
+        title: "SMTP Test Email",
+        body: `<p>This is a test email sent from <strong>AssetFlow</strong> to verify your SMTP configuration.</p>
+               <p>If you received this email, your SMTP settings are working correctly.</p>`,
+      }),
+      smtp: {
+        host,
+        port: parseInt(port, 10),
+        user: user || undefined,
+        pass: pass || undefined,
+      },
     });
 
-    await transporter.verify();
-
-    return ok({ message: "SMTP connection successful." });
+    return ok({ message: "Test email sent successfully. Please check your inbox." });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return serverError(new Error(`SMTP test failed: ${message}`));
