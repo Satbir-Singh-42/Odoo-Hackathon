@@ -295,10 +295,77 @@ export function AssetAllotmentForm({
 
   // Auto-close form if background refresh makes it unavailable (e.g. after a conflict)
   useEffect(() => {
-    if (availableLicenses <= 0 && showAllocationForm) {
+    if (availableLicenses <= 0 && showAllocationForm && asset.status !== ASSET_STATUS.ALLOCATED) {
       setShowAllocationForm(false);
     }
-  }, [availableLicenses, showAllocationForm]);
+  }, [availableLicenses, showAllocationForm, asset.status]);
+
+  const conflictAsset = useMemo(() => {
+    if (isBulkMode) return null;
+
+    if (allocationType === "User") {
+      const isAllocated = asset.status === ASSET_STATUS.ALLOCATED || (asset.totalQuantity !== undefined && asset.totalQuantity > 0 && availableLicenses <= 0);
+      if (isAllocated) {
+        const activeAlloc = allocations.find(
+          (a) => a.status === ALLOCATION_STATUS_DISPLAY.ACTIVE && String(a.assetId) === String(asset.id)
+        );
+        return {
+          id: asset.id,
+          name: asset.assetName || asset.assetCode || "Current Asset",
+          holderName: asset.userName || activeAlloc?.userName || "Another employee",
+          holderId: asset.employeeId || activeAlloc?.employeeId || null,
+          allocationId: activeAlloc?.id || null
+        };
+      }
+    } else if (allocationType === "Asset") {
+      if (selectedAssetId) {
+        const selectedAsset = assets.find((a) => String(a.id) === String(selectedAssetId));
+        const isAllocated = selectedAsset?.status === ASSET_STATUS.ALLOCATED || selectedAsset?.employeeId;
+        if (isAllocated) {
+          return {
+            id: selectedAsset.id,
+            name: selectedAsset.assetName || selectedAsset.assetCode || "Selected Asset",
+            holderName: selectedAsset.userName || "Another employee",
+            holderId: selectedAsset.employeeId || null,
+            allocationId: null
+          };
+        }
+      }
+    }
+    return null;
+  }, [allocationType, isBulkMode, asset, assets, selectedAssetId, availableLicenses, allocations]);
+
+  const handleRequestTransfer = useCallback(async () => {
+    if (!conflictAsset) return;
+
+    try {
+      const response = await fetch("/api/transfers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetId: Number(conflictAsset.id),
+          reason: `Transfer requested due to allocation conflict.`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit transfer request.");
+      }
+
+      toast.success("Transfer request submitted successfully!");
+      setShowAllocationForm(false);
+      
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("REFRESH_ANOMALIES"));
+        window.dispatchEvent(new CustomEvent("refreshNotifications"));
+        window.location.reload();
+      }, 500);
+    } catch (err: any) {
+      toast.error(err.message || "Error submitting transfer request.");
+    }
+  }, [conflictAsset]);
 
   const activeAllocations = useMemo(
     () =>
@@ -1124,7 +1191,7 @@ export function AssetAllotmentForm({
               <button
                 onClick={() => setShowAllocationForm(true)}
                 disabled={
-                  availableLicenses === 0 ||
+                  (availableLicenses === 0 && asset.status !== ASSET_STATUS.ALLOCATED) ||
                   !canAllocate(asset.status) ||
                   isNewAllocationBlockedByCondition
                 }
@@ -1755,6 +1822,18 @@ export function AssetAllotmentForm({
               </div>
             )}
 
+            {conflictAsset && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex flex-col gap-1 my-2">
+                <p className="font-semibold flex items-center gap-1">
+                  <span>Conflict Detected:</span>
+                  <span>"{conflictAsset.name}" is currently held by {conflictAsset.holderName} {conflictAsset.holderId ? `(ID: ${conflictAsset.holderId})` : ""}.</span>
+                </p>
+                <p className="text-gray-600">
+                  Standard allocation is blocked. You can submit a transfer request instead to request access.
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-4 pt-2 border-t mt-4">
               <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 uppercase">
                 {isBulkMode
@@ -1768,35 +1847,44 @@ export function AssetAllotmentForm({
                   className="px-4 py-1.5 bg-gray-100 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-200">
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  onClick={handleAllocate}
-                  disabled={
-                    isAllocationBlockedByCondition ||
-                    (!isBulkMode &&
-                      allocationType === "User" &&
-                      (!selectedUserId ||
-                        (asset.isBulkOrder && !selectedUnitId))) ||
-                    (!isBulkMode &&
-                      allocationType === "Asset" &&
-                      (!selectedAssetId ||
-                        (asset.isBulkOrder && !selectedUnitId))) ||
-                    (!isBulkMode &&
-                      allocationType === "Location" &&
-                      (!allocationLocation.trim() ||
-                        (asset.isBulkOrder && !selectedUnitId))) ||
-                    (isBulkMode &&
-                      bulkRows.filter(
-                        (r) =>
-                          r.unitId &&
-                          (allocationType === "Location"
-                            ? r.location
-                            : r.targetId),
-                      ).length === 0)
-                  }
-                  className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:bg-gray-300">
-                  Allocate
-                </button>
+                {conflictAsset ? (
+                  <button
+                    type="button"
+                    onClick={handleRequestTransfer}
+                    className="px-4 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 shadow-sm transition-all">
+                    Request Transfer
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAllocate}
+                    disabled={
+                      isAllocationBlockedByCondition ||
+                      (!isBulkMode &&
+                        allocationType === "User" &&
+                        (!selectedUserId ||
+                          (asset.isBulkOrder && !selectedUnitId))) ||
+                      (!isBulkMode &&
+                        allocationType === "Asset" &&
+                        (!selectedAssetId ||
+                          (asset.isBulkOrder && !selectedUnitId))) ||
+                      (!isBulkMode &&
+                        allocationType === "Location" &&
+                        (!allocationLocation.trim() ||
+                          (asset.isBulkOrder && !selectedUnitId))) ||
+                      (isBulkMode &&
+                        bulkRows.filter(
+                          (r) =>
+                            r.unitId &&
+                            (allocationType === "Location"
+                              ? r.location
+                              : r.targetId),
+                        ).length === 0)
+                    }
+                    className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:bg-gray-300">
+                    Allocate
+                  </button>
+                )}
               </div>
             </div>
           </div>

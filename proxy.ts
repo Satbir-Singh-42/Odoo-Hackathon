@@ -1,5 +1,5 @@
 /**
- * Next.js Server Proxy (formerly Edge Middleware)
+ * Next.js Middleware (activated from proxy.ts)
  * Runs on every request before it hits a route handler or page.
  *
  * Responsibilities (in order):
@@ -101,6 +101,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 // =============================================
 const PUBLIC_PATHS = [
   "/auth/sign-in",
+  "/auth/sign-up",
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/error",
@@ -193,7 +194,7 @@ export default auth(async function proxy(req: NextRequest & { auth?: any }) {
 });
 
 // =============================================
-// MATCHER — which paths trigger this proxy
+// MATCHER — which paths trigger this middleware
 // =============================================
 export const config = {
   matcher: [

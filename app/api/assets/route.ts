@@ -17,6 +17,7 @@ import {
 } from "@/lib/api-helpers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { listAssets, createAsset } from "@/lib/services/assetService";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const asset = await createAsset(data, session.user.employeeId);
+
+    // On-Demand Revalidation
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+
     return created(asset);
   } catch (err) {
     if (err instanceof Error && err.message.includes("already exists")) {

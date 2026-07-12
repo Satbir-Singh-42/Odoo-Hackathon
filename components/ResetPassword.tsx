@@ -16,13 +16,14 @@ import { getErrorMessage } from '@/lib/utils/errorHelpers';
 
 // Reads ?token= from the current URL
 function getTokenFromUrl(): string {
+  if (typeof window === "undefined") return "";
   return new URLSearchParams(window.location.search).get("token") || "";
 }
 
 type PageState = "validating" | "ready" | "submitting" | "success" | "error";
 
 export function ResetPassword() {
-  const [token] = useState(getTokenFromUrl);
+  const [token, setToken] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -34,14 +35,16 @@ export function ResetPassword() {
 
   // Validate token on mount
   useEffect(() => {
-    if (!token) {
+    const t = getTokenFromUrl();
+    if (!t) {
       setErrorMessage("No reset token found in the URL. Please request a new password reset link.");
       setPageState("error");
       return;
     }
+    setToken(t);
 
     dataService
-      .validateResetToken(token)
+      .validateResetToken(t)
       .then((data) => {
         setFullName(data.fullName || "");
         setPageState("ready");
@@ -50,7 +53,7 @@ export function ResetPassword() {
         setErrorMessage(getErrorMessage(err) || "Invalid or expired reset link.");
         setPageState("error");
       });
-  }, [token]);
+  }, []);
 
   const validate = (): boolean => {
     if (password.length < 8) {
