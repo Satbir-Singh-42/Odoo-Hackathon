@@ -1,9 +1,18 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+"use client";
 
-// Root redirect — send users straight to the dashboard
-export default async function RootPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/sign-in");
-  redirect("/dashboard");
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+// Root redirect — send users to dashboard or sign-in based on session
+export default function RootPage() {
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") router.replace("/dashboard");
+    else if (status === "unauthenticated") router.replace("/auth/sign-in");
+  }, [status, router]);
+
+  return null;
 }

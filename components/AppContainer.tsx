@@ -64,6 +64,12 @@ const Reports = lazy<React.ComponentType<any>>(() =>
 const SettingsPage = lazy<React.ComponentType<any>>(() =>
   import("@/components/SettingsPage").then((m) => ({ default: m.SettingsPage }))
 );
+const BookingsPage = lazy<React.ComponentType<any>>(() =>
+  import("@/components/BookingsPage").then((m) => ({ default: m.BookingsPage }))
+);
+const AuditsPage = lazy<React.ComponentType<any>>(() =>
+  import("@/components/AuditsPage").then((m) => ({ default: m.AuditsPage }))
+);
 const DataViewPage = lazy<React.ComponentType<any>>(() => import("@/components/DataViewPage"));
 
 // Modals — lazily loaded so their code only ships when the user opens them
@@ -116,7 +122,9 @@ type View =
   | "allocations"
   | "maintenance"
   | "reports"
-  | "settings";
+  | "settings"
+  | "bookings"
+  | "audits";
 
 // ==================== URL ROUTING HELPERS ====================
 const viewToPath: Record<View, string> = {
@@ -126,6 +134,8 @@ const viewToPath: Record<View, string> = {
   maintenance: "/maintenance",
   reports: "/reports",
   settings: "/settings",
+  bookings: "/bookings",
+  audits: "/audits",
 };
 
 const getViewFromPath = (): View => {
@@ -137,6 +147,8 @@ const getViewFromPath = (): View => {
   if (path.startsWith("/maintenance")) return "maintenance";
   if (path.startsWith("/report")) return "reports";
   if (path.startsWith("/setting") || path.startsWith("/notification")) return "settings";
+  if (path.startsWith("/booking")) return "bookings";
+  if (path.startsWith("/audit")) return "audits";
 
   return "dashboard";
 };
@@ -147,6 +159,8 @@ const navItems = [
   { id: "assets" as View, label: "Assets" },
   { id: "allocations" as View, label: "Allocations" },
   { id: "maintenance" as View, label: "Maintenance" },
+  { id: "bookings" as View, label: "Bookings" },
+  { id: "audits" as View, label: "Audits" },
   { id: "reports" as View, label: "Reports" },
 ];
 
@@ -3094,6 +3108,22 @@ export default function AppContainer({ initialView }: AppContainerProps = {}) {
               }}
               users={users}
               licenseAllocations={licenseAllocations}
+            />
+          )}
+
+          {currentView === "bookings" && (
+            <BookingsPage
+              assets={scopedAssets}
+              users={users}
+              userRole={currentRole}
+            />
+          )}
+
+          {currentView === "audits" && (
+            <AuditsPage
+              assets={scopedAssets}
+              users={users}
+              userRole={currentRole}
             />
           )}
         </Suspense>

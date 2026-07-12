@@ -8,13 +8,18 @@ import {
   ChevronRight,
   Bell,
   ShieldCheck,
+  Building,
+  Tags,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { AuditLogPage } from "./AuditLog";
 import { UsersManagement } from "./UsersManagement";
 import { VendorsManagement } from "./VendorsManagement";
 import { NotificationCenter } from "./NotificationCenter";
 import { AdminControlPage } from "./AdminControlPage";
+import { DepartmentsManagement } from "./DepartmentsManagement";
+import { CategoriesManagement } from "./CategoriesManagement";
 import type { Asset, User, LicenseAllocation } from '@/types';
 
 type SettingsTab =
@@ -22,7 +27,9 @@ type SettingsTab =
   | "users"
   | "vendors"
   | "notifications"
-  | "admin-control";
+  | "admin-control"
+  | "departments"
+  | "categories";
 
 const sidebarItems: {
   id: SettingsTab;
@@ -55,6 +62,18 @@ const sidebarItems: {
       description: "Manage vendors",
     },
     {
+      id: "departments",
+      label: "Departments",
+      icon: Building,
+      description: "Manage departments",
+    },
+    {
+      id: "categories",
+      label: "Asset Categories",
+      icon: Tags,
+      description: "Manage custom categories",
+    },
+    {
       id: "admin-control",
       label: "Admin Control",
       icon: ShieldCheck,
@@ -68,6 +87,8 @@ const settingsTabToPath: Record<SettingsTab, string> = {
   vendors: "/settings/vendors",
   notifications: "/settings/notifications",
   "admin-control": "/settings/control",
+  departments: "/settings/departments",
+  categories: "/settings/categories",
 };
 
 function getSettingsTabFromPath(pathname: string): SettingsTab {
@@ -76,6 +97,8 @@ function getSettingsTabFromPath(pathname: string): SettingsTab {
   if (p.includes("users")) return "users";
   if (p.includes("vendors")) return "vendors";
   if (p.includes("control")) return "admin-control";
+  if (p.includes("departments")) return "departments";
+  if (p.includes("categories")) return "categories";
   return "audit-log";
 }
 
@@ -85,11 +108,21 @@ export function SettingsPage({
   users,
   licenseAllocations,
 }: {
-  onViewAsset?: (asset: Partial<Asset>) => void;
-  onViewMaintenance?: (m: Partial<any>) => void;
-  users?: User[];
-  licenseAllocations?: LicenseAllocation[];
-} = {}) {
+  onViewAsset?: (asset: any) => void;
+  onViewMaintenance?: (m: any) => void;
+  users?: any[];
+  licenseAllocations?: any[];
+}) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "Admin";
+
+  const visibleItems = sidebarItems.filter((item) => {
+    if (item.id === "departments" || item.id === "categories" || item.id === "admin-control") {
+      return isAdmin;
+    }
+    return true;
+  });
+
   const [activeTab, setActiveTab] = useState<SettingsTab>(() =>
     getSettingsTabFromPath(window.location.pathname),
   );
@@ -147,7 +180,7 @@ export function SettingsPage({
           className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-700 transition-all no-push">
           <div className="flex items-center gap-2">
             {(() => {
-              const item = sidebarItems.find((i) => i.id === activeTab);
+              const item = visibleItems.find((i) => i.id === activeTab);
               const Icon = item?.icon || FileText;
               return (
                 <>
@@ -163,7 +196,7 @@ export function SettingsPage({
         </button>
         {mobileOpen && (
           <div className="mt-2 bg-white rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-            {sidebarItems.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -209,7 +242,7 @@ export function SettingsPage({
             </p>
           </div>
           <nav className="p-2 space-y-0.5">
-            {sidebarItems.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -265,6 +298,8 @@ export function SettingsPage({
             )}
             {activeTab === "vendors" && <VendorsManagement />}
             {activeTab === "admin-control" && <AdminControlPage />}
+            {activeTab === "departments" && <DepartmentsManagement />}
+            {activeTab === "categories" && <CategoriesManagement />}
           </motion.div>
         </AnimatePresence>
       </div>

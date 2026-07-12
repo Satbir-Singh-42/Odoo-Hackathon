@@ -3,8 +3,9 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { User, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { User, Lock, AlertCircle, Eye, EyeOff, ChevronRight } from "lucide-react";
 import { ForgotPassword } from "@/components/ForgotPassword";
+import Link from "next/link";
 
 function SignInContent() {
   const router = useRouter();
@@ -203,6 +204,14 @@ function SignInContent() {
                   )}
                 </button>
               </form>
+
+              {/* Sign Up Link */}
+              <div className="mt-6 text-center text-sm">
+                <span className="text-gray-600">Don't have an account? </span>
+                <Link href="/auth/sign-up" className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-0.5">
+                  Sign Up <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
             </>
           )}
         </div>

@@ -22,6 +22,7 @@ import {
   updateAsset,
   deleteAsset,
 } from "@/lib/services/assetService";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
@@ -85,6 +86,10 @@ export async function PUT(
       bodyResult.data,
       session.user.employeeId
     );
+    
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+
     return ok(updated);
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {
@@ -106,6 +111,10 @@ export async function DELETE(
   try {
     const { id } = await params;
     await deleteAsset(parseInt(id, 10), session.user.employeeId);
+
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+
     return noContent();
   } catch (err) {
     if (err instanceof Error && err.message.includes("not found")) {
